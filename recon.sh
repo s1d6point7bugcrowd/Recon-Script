@@ -70,6 +70,12 @@ read -p "Enter Out-Of-Scope subdomains (comma-separated, leave blank for none): 
 
 
 
+# Prompt for OOS URLs (comma-separated)
+
+read -p "Enter Out-Of-Scope URLs (comma-separated, leave blank for none): " OOS_URLS
+
+
+
 # Prompt for using naabu for port scanning
 
 read -p "Do you want to use naabu for port scanning? (yes/no): " USE_NAABU
@@ -80,13 +86,29 @@ read -p "Do you want to use naabu for port scanning? (yes/no): " USE_NAABU
 
 if [ -n "$OOS_SUBDOMAINS" ]; then
 
-    OOS_PATTERNS=$(echo "$OOS_SUBDOMAINS" | tr ',' '\n')
+    OOS_SUB_PATTERNS=$(echo "$OOS_SUBDOMAINS" | tr ',' '\n')
 
-    FILTER_CMD="grep -vFf <(echo \"$OOS_PATTERNS\")"
+    SUB_FILTER_CMD="grep -vFf <(echo \"$OOS_SUB_PATTERNS\")"
 
 else
 
-    FILTER_CMD="cat"
+    SUB_FILTER_CMD="cat"
+
+fi
+
+
+
+# Convert OOS URLs into grep-friendly patterns
+
+if [ -n "$OOS_URLS" ]; then
+
+    OOS_URL_PATTERNS=$(echo "$OOS_URLS" | tr ',' '\n')
+
+    URL_FILTER_CMD="grep -vFf <(echo \"$OOS_URL_PATTERNS\")"
+
+else
+
+    URL_FILTER_CMD="cat"
 
 fi
 
@@ -108,6 +130,22 @@ fi
 
 
 
+# Show the excluded URLs
+
+if [ -n "$OOS_URLS" ]; then
+
+    echo_red "The following URLs will be excluded from scanning:"
+
+    echo_red "$OOS_URLS"
+
+else
+
+    echo_red "No URLs will be excluded from scanning."
+
+fi
+
+
+
 # Construct the custom header
 
 CUSTOM_HEADER="X-Bug-Bounty:researcher@$PROGRAM_NAME"
@@ -122,7 +160,7 @@ if [ "$MODE" == "domain" ]; then
 
     echo_green "Running subfinder..."
 
-    subfinder -d "$TARGET" -silent | eval "$FILTER_CMD" | anew "${TARGET}-subs.txt"
+    subfinder -d "$TARGET" -silent | eval "$SUB_FILTER_CMD" | anew "${TARGET}-subs.txt"
 
     cat "${TARGET}-subs.txt"
 
@@ -198,7 +236,7 @@ if [ "$MODE" == "domain" ]; then
 
     echo_green "Running httpx on gau results..."
 
-    httpx -silent --rate-limit 5 -title -status-code -mc 200,301,302 < "${TARGET}-gau.txt" | anew "${TARGET}-web-alive.txt"
+    httpx -silent --rate-limit 5 -title -status-code -mc 200,301,302 < "${TARGET}-gau.txt" | eval "$URL_FILTER_CMD" | anew "${TARGET}-web-alive.txt"
 
     cat "${TARGET}-web-alive.txt"
 
