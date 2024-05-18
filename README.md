@@ -1,4 +1,4 @@
-# Reconnaissance Script
+# Web Application Reconnaissance Script
 
 ## Disclaimer
 
