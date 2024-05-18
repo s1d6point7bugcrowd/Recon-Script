@@ -29,6 +29,9 @@ fi
 # Prompt for OOS items (comma-separated)
 read -p "Enter Out-Of-Scope subdomains or URLs (comma-separated, leave blank for none): " OOS_ITEMS
 
+# Prompt for using naabu for port scanning
+read -p "Do you want to use naabu for port scanning? (yes/no): " USE_NAABU
+
 # Convert OOS items into grep-friendly patterns for subdomains and URLs separately
 FILTER_CMD="cat"
 if [ -n "$OOS_ITEMS" ]; then
@@ -58,9 +61,13 @@ echo_red "Using custom header: $CUSTOM_HEADER"
 if [ "$MODE" == "domain" ]; then
     subfinder -d "$TARGET" -silent | eval "$FILTER_CMD" | anew "${TARGET}-subs.txt" && \
     dnsx -resp -silent < "${TARGET}-subs.txt" | anew "${TARGET}-alive-subs-ip.txt" && \
-    awk '{print $1}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt" && \
-    sudo naabu -top-ports 1000 -rate 5 -c 25 -silent < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt" && \
-    cut -d ":" -f1 < "${TARGET}-openports.txt" | sudo naabu | anew "${TARGET}-openports.txt" && \
+    awk '{print $1}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
+    
+    if [ "$USE_NAABU" == "yes" ]; then
+        sudo naabu -top-ports 1000 -rate 5 -c 25 -silent < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt" && \
+        cut -d ":" -f1 < "${TARGET}-openports.txt" | sudo naabu | anew "${TARGET}-openports.txt"
+    fi
+    
     httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < "${TARGET}-openports.txt" | anew "${TARGET}-web-alive.txt" && \
     awk '{print $1}' < "${TARGET}-web-alive.txt" | gospider -t 10 -o "${TARGET}crawl" | anew "${TARGET}-crawled.txt" && \
     unfurl format %s://%d%p < "${TARGET}-crawled.txt" | httpx -td --rate-limit 5 -silent -title -status-code | anew "${TARGET}-crawled-interesting.txt" && \
