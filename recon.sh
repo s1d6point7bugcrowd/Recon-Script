@@ -68,6 +68,9 @@ if [ "$MODE" == "domain" ]; then
     # Run subzy to check for subdomain takeovers
     subzy run --targets subdomains.txt --hide_fails | anew "${TARGET}-subzy-results.txt"
 
+    # Clear subdomains.txt after use
+    > subdomains.txt
+
 elif [ "$MODE" == "url" ]; then
     echo "$TARGET" | nuclei -include-tags misc -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
 
