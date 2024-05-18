@@ -21,23 +21,28 @@ if [ -z "$PROGRAM_NAME" ]; then
     exit 1
 fi
 
-# Prompt for OOS subdomains (comma-separated)
-read -p "Enter Out-Of-Scope subdomains (comma-separated, leave blank for none): " OOS_SUBDOMAINS
+# Prompt for OOS items (comma-separated)
+read -p "Enter Out-Of-Scope subdomains or URLs (comma-separated, leave blank for none): " OOS_ITEMS
 
-# Convert OOS subdomains into grep-friendly patterns
-if [ -n "$OOS_SUBDOMAINS" ]; then
-    OOS_PATTERNS=$(echo "$OOS_SUBDOMAINS" | tr ',' '\\n')
-    FILTER_CMD="grep -vFf <(echo \\"$OOS_PATTERNS\\")"
-else
-    FILTER_CMD="cat"
+# Convert OOS items into grep-friendly patterns for subdomains and URLs separately
+FILTER_CMD="cat"
+if [ -n "$OOS_ITEMS" ]; then
+    OOS_SUBDOMAINS=$(echo "$OOS_ITEMS" | tr ',' '\n' | grep -v 'http' | sed 's/^/"/;s/$/"/')
+    OOS_URLS=$(echo "$OOS_ITEMS" | tr ',' '\n' | grep 'http' | sed 's/^/"/;s/$/"/')
+    if [ -n "$OOS_SUBDOMAINS" ]; then
+        FILTER_CMD="grep -vFf <(echo -e \"$OOS_SUBDOMAINS\")"
+    fi
+    if [ -n "$OOS_URLS" ]; then
+        FILTER_CMD="$FILTER_CMD | grep -vFf <(echo -e \"$OOS_URLS\")"
+    fi
 fi
 
-# Show the excluded subdomains
-if [ -n "$OOS_SUBDOMAINS" ]; then
-    echo "The following subdomains will be excluded from scanning:"
-    echo "$OOS_SUBDOMAINS"
+# Show the excluded subdomains and URLs
+if [ -n "$OOS_ITEMS" ]; then
+    echo "The following subdomains/URLs will be excluded from scanning:"
+    echo "$OOS_ITEMS"
 else
-    echo "No subdomains will be excluded from scanning."
+    echo "No subdomains/URLs will be excluded from scanning."
 fi
 
 # Construct the custom header
