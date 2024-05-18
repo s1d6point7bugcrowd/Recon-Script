@@ -1,11 +1,16 @@
 #!/bin/bash
 
+# Function to print text in red color
+echo_red() {
+    echo -e "\e[31m$1\e[0m"
+}
+
 # Check if sufficient arguments are passed
 if [ "$#" -lt 2 ]; then
-    echo "Usage: $0 <mode> <target>"
-    echo "Modes:"
-    echo "  domain   Target is a domain name"
-    echo "  url      Target is a specific URL"
+    echo_red "Usage: $0 <mode> <target>"
+    echo_red "Modes:"
+    echo_red "  domain   Target is a domain name"
+    echo_red "  url      Target is a specific URL"
     exit 1
 fi
 
@@ -17,7 +22,7 @@ read -p "Enter the program name for the X-Bug-Bounty header: " PROGRAM_NAME
 
 # Validate the program name input
 if [ -z "$PROGRAM_NAME" ]; then
-    echo "Program name is required. Exiting."
+    echo_red "Program name is required. Exiting."
     exit 1
 fi
 
@@ -39,15 +44,15 @@ fi
 
 # Show the excluded subdomains and URLs
 if [ -n "$OOS_ITEMS" ]; then
-    echo "The following subdomains/URLs will be excluded from scanning:"
-    echo "$OOS_ITEMS"
+    echo_red "The following subdomains/URLs will be excluded from scanning:"
+    echo_red "$OOS_ITEMS"
 else
-    echo "No subdomains/URLs will be excluded from scanning."
+    echo_red "No subdomains/URLs will be excluded from scanning."
 fi
 
 # Construct the custom header
 CUSTOM_HEADER="X-Bug-Bounty:researcher@$PROGRAM_NAME"
-echo "Using custom header: $CUSTOM_HEADER"
+echo_red "Using custom header: $CUSTOM_HEADER"
 
 # Conditional execution based on mode
 if [ "$MODE" == "domain" ]; then
@@ -68,7 +73,7 @@ if [ "$MODE" == "domain" ]; then
     cat "${TARGET}-subs.txt" > subdomains.txt
 
     # Inform the user about subdomain takeover detection
-    echo "Subdomain takeover detection in progress..."
+    echo_red "Subdomain takeover detection in progress..."
 
     # Run subzy to check for subdomain takeovers
     subzy run --targets subdomains.txt --hide_fails | anew "${TARGET}-subzy-results.txt"
@@ -80,6 +85,6 @@ elif [ "$MODE" == "url" ]; then
     echo "$TARGET" | nuclei -include-tags misc -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
 
 else
-    echo "Invalid mode specified. Use 'domain' or 'url'."
+    echo_red "Invalid mode specified. Use 'domain' or 'url'."
     exit 1
 fi
