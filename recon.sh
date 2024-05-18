@@ -188,9 +188,15 @@ if [ "$MODE" == "domain" ]; then
 
         sudo naabu -top-ports 1000 -c 25 -silent < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt"
 
-        cat "${TARGET}-openports.txt"
+    else
+
+        echo_green "Skipping naabu. Using alive subs for further scanning..."
+
+        cp "${TARGET}-alive-subs.txt" "${TARGET}-openports.txt"
 
     fi
+
+    cat "${TARGET}-openports.txt"
 
 
 
