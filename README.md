@@ -6,7 +6,7 @@
 
 ## Overview
 
-This reconnaissance script automates the process of gathering information about a target domain or URL. It performs subdomain enumeration, resolves subdomains to IP addresses, checks for live hosts, scans for open ports, and identifies web services. Additionally, it includes subdomain takeover detection. The script ensures rate-limiting to comply with responsible disclosure policies and integrates various tools.
+This reconnaissance script automates the process of gathering information about a target domain or URL. It performs subdomain enumeration, resolves subdomains to IP addresses, checks for live hosts, scans for open ports, and identifies web services. The script ensures rate-limiting to comply with responsible disclosure policies and integrates various tools.
 
 ### Key Features
 
@@ -16,7 +16,7 @@ This reconnaissance script automates the process of gathering information about 
 - Web service identification and crawling
 - Extraction and analysis of interesting URLs
 - Historical URL retrieval
-- Subdomain takeover detection
+
 
 ### Tools Integrated
 
@@ -28,7 +28,7 @@ This reconnaissance script automates the process of gathering information about 
 - `unfurl`: For URL formatting
 - `gau`: For retrieving historical URLs
 - `nuclei`: For vulnerability scanning
-- `subzy`: For subdomain takeover detection
+
 
 ### Usage
 
