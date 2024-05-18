@@ -110,7 +110,7 @@ fi
 
 # Construct the custom header
 
-CUSTOM_HEADER="X-Bug-Bounty:s1d6p01nt7@$PROGRAM_NAME"
+CUSTOM_HEADER="X-Bug-Bounty:researcher@$PROGRAM_NAME"
 
 echo_red "Using custom header: $CUSTOM_HEADER"
 
