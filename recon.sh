@@ -64,7 +64,7 @@ if [ "$MODE" == "domain" ]; then
     awk '{print $1}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
     
     if [ "$USE_NAABU" == "yes" ]; then
-        sudo naabu -top-ports 1000 -rate 5 -c 25 -silent < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt" && \
+        sudo naabu -top-ports 1000  -c 25  < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt" && \
         cut -d ":" -f1 < "${TARGET}-openports.txt" | sudo naabu | anew "${TARGET}-openports.txt"
     fi
     
