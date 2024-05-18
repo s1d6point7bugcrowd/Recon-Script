@@ -1,97 +1,230 @@
 #!/bin/bash
 
+
+
 # Function to print text in red color
+
 echo_red() {
+
     echo -e "\e[31m$1\e[0m"
+
 }
 
+
+
+# Function to print text in green color
+
+echo_green() {
+
+    echo -e "\e[32m$1\e[0m"
+
+}
+
+
+
 # Check if sufficient arguments are passed
+
 if [ "$#" -lt 2 ]; then
+
     echo_red "Usage: $0 <mode> <target>"
+
     echo_red "Modes:"
+
     echo_red "  domain   Target is a domain name"
+
     echo_red "  url      Target is a specific URL"
+
     exit 1
+
 fi
+
+
 
 MODE="$1" # 'domain' or 'url'
+
 TARGET="$2"
 
+
+
 # Prompt for the program name
+
 read -p "Enter the program name for the X-Bug-Bounty header: " PROGRAM_NAME
 
+
+
 # Validate the program name input
+
 if [ -z "$PROGRAM_NAME" ]; then
+
     echo_red "Program name is required. Exiting."
+
     exit 1
+
 fi
 
-# Prompt for OOS items (comma-separated)
-read -p "Enter Out-Of-Scope subdomains or URLs (comma-separated, leave blank for none): " OOS_ITEMS
+
+
+# Prompt for OOS subdomains (comma-separated)
+
+read -p "Enter Out-Of-Scope subdomains (comma-separated, leave blank for none): " OOS_SUBDOMAINS
+
+
 
 # Prompt for using naabu for port scanning
+
 read -p "Do you want to use naabu for port scanning? (yes/no): " USE_NAABU
 
-# Convert OOS items into grep-friendly patterns for subdomains and URLs separately
-FILTER_CMD="cat"
-if [ -n "$OOS_ITEMS" ]; then
-    OOS_SUBDOMAINS=$(echo "$OOS_ITEMS" | tr ',' '\n' | grep -v 'http' | sed 's/^/"/;s/$/"/')
-    OOS_URLS=$(echo "$OOS_ITEMS" | tr ',' '\n' | grep 'http' | sed 's/^/"/;s/$/"/')
-    if [ -n "$OOS_SUBDOMAINS" ]; then
-        FILTER_CMD="grep -vFf <(echo -e \"$OOS_SUBDOMAINS\")"
-    fi
-    if [ -n "$OOS_URLS" ]; then
-        FILTER_CMD="$FILTER_CMD | grep -vFf <(echo -e \"$OOS_URLS\")"
-    fi
+
+
+# Convert OOS subdomains into grep-friendly patterns
+
+if [ -n "$OOS_SUBDOMAINS" ]; then
+
+    OOS_PATTERNS=$(echo "$OOS_SUBDOMAINS" | tr ',' '\n')
+
+    FILTER_CMD="grep -vFf <(echo \"$OOS_PATTERNS\")"
+
+else
+
+    FILTER_CMD="cat"
+
 fi
 
-# Show the excluded subdomains and URLs
-if [ -n "$OOS_ITEMS" ]; then
-    echo_red "The following subdomains/URLs will be excluded from scanning:"
-    echo_red "$OOS_ITEMS"
+
+
+# Show the excluded subdomains
+
+if [ -n "$OOS_SUBDOMAINS" ]; then
+
+    echo_red "The following subdomains will be excluded from scanning:"
+
+    echo_red "$OOS_SUBDOMAINS"
+
 else
-    echo_red "No subdomains/URLs will be excluded from scanning."
+
+    echo_red "No subdomains will be excluded from scanning."
+
 fi
+
+
 
 # Construct the custom header
-CUSTOM_HEADER="X-Bug-Bounty:researcher@$PROGRAM_NAME"
+
+CUSTOM_HEADER="X-Bug-Bounty:s1d6p01nt7@$PROGRAM_NAME"
+
 echo_red "Using custom header: $CUSTOM_HEADER"
 
+
+
 # Conditional execution based on mode
+
 if [ "$MODE" == "domain" ]; then
-    subfinder -d "$TARGET" -silent | eval "$FILTER_CMD" | anew "${TARGET}-subs.txt" && \
-    dnsx -resp -silent < "${TARGET}-subs.txt" | anew "${TARGET}-alive-subs-ip.txt" && \
+
+    echo_green "Running subfinder..."
+
+    subfinder -d "$TARGET" -silent | eval "$FILTER_CMD" | anew "${TARGET}-subs.txt"
+
+    cat "${TARGET}-subs.txt"
+
+
+
+    echo_green "Running dnsx..."
+
+    dnsx -resp -silent < "${TARGET}-subs.txt" | anew "${TARGET}-alive-subs-ip.txt"
+
+    cat "${TARGET}-alive-subs-ip.txt"
+
+
+
+    echo_green "Running awk to extract IP addresses..."
+
     awk '{print $1}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
-    
+
+    cat "${TARGET}-alive-subs.txt"
+
+
+
     if [ "$USE_NAABU" == "yes" ]; then
-        sudo naabu -top-ports 1000  -c 25  < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt" && \
-        cut -d ":" -f1 < "${TARGET}-openports.txt" | sudo naabu | anew "${TARGET}-openports.txt"
+
+        echo_green "Running naabu for port scanning..."
+
+        sudo naabu -top-ports 1000 -c 25 -silent < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt"
+
+        cat "${TARGET}-openports.txt"
+
     fi
-    
-    httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < "${TARGET}-openports.txt" | anew "${TARGET}-web-alive.txt" && \
-    awk '{print $1}' < "${TARGET}-web-alive.txt" | gospider -t 10 -o "${TARGET}crawl" | anew "${TARGET}-crawled.txt" && \
-    unfurl format %s://%d%p < "${TARGET}-crawled.txt" | httpx -td --rate-limit 5 -silent -title -status-code | anew "${TARGET}-crawled-interesting.txt" && \
-    grep -E "(admin|dashboard|control|panel|manage|login|signin|signup|register|backup|config|secret|token|error|api|v1|v2|graphql|\\.js)" "${TARGET}-crawled-interesting.txt" | anew "${TARGET}-interesting.txt" && \
-    awk '{print $1}' < "${TARGET}-interesting.txt" | gau -b eot,svg,woff,ttf,png,jpg,gif,otf,bmp,pdf,mp3,mp4,mov --subs | anew "${TARGET}-gau.txt" && \
-    httpx -silent --rate-limit 5 -title -status-code -mc 200,301,302 < "${TARGET}-gau.txt" | anew "${TARGET}-web-alive.txt" && \
+
+
+
+    echo_green "Running httpx..."
+
+    httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < "${TARGET}-alive-subs.txt" | anew "${TARGET}-web-alive.txt"
+
+    cat "${TARGET}-web-alive.txt"
+
+
+
+    echo_green "Running gospider..."
+
+    awk '{print $1}' < "${TARGET}-web-alive.txt" | gospider -t 10 -o "${TARGET}crawl" | anew "${TARGET}-crawled.txt"
+
+    cat "${TARGET}-crawled.txt"
+
+
+
+    echo_green "Running unfurl..."
+
+    unfurl format %s://%d%p < "${TARGET}-crawled.txt" | httpx -td --rate-limit 5 -silent -title -status-code | anew "${TARGET}-crawled-interesting.txt"
+
+    cat "${TARGET}-crawled-interesting.txt"
+
+
+
+    echo_green "Running grep for interesting endpoints..."
+
+    grep -E "(admin|dashboard|control|panel|manage|login|signin|signup|register|backup|config|secret|token|error|api|v1|v2|graphql|\\.js)" "${TARGET}-crawled-interesting.txt" | anew "${TARGET}-interesting.txt"
+
+    cat "${TARGET}-interesting.txt"
+
+
+
+    echo_green "Running gau..."
+
+    awk '{print $1}' < "${TARGET}-interesting.txt" | gau -b eot,svg,woff,ttf,png,jpg,gif,otf,bmp,pdf,mp3,mp4,mov --subs | anew "${TARGET}-gau.txt"
+
+    cat "${TARGET}-gau.txt"
+
+
+
+    echo_green "Running httpx on gau results..."
+
+    httpx -silent --rate-limit 5 -title -status-code -mc 200,301,302 < "${TARGET}-gau.txt" | anew "${TARGET}-web-alive.txt"
+
+    cat "${TARGET}-web-alive.txt"
+
+
+
+    echo_green "Running nuclei..."
+
     awk '{print $1}' < "${TARGET}-web-alive.txt" | nuclei -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
 
-    # Save in-scope subdomains to subdomains.txt
-    cat "${TARGET}-subs.txt" > subdomains.txt
+    cat "${TARGET}-web-alive.txt"
 
-    # Inform the user about subdomain takeover detection
-    echo_red "Subdomain takeover detection in progress..."
 
-    # Run subzy to check for subdomain takeovers
-    subzy run --targets subdomains.txt --hide_fails | anew "${TARGET}-subzy-results.txt"
-
-    # Clear subdomains.txt after use
-    > subdomains.txt
 
 elif [ "$MODE" == "url" ]; then
+
+    echo_green "Running nuclei on the specified URL..."
+
     echo "$TARGET" | nuclei -include-tags misc -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
 
+
+
 else
+
     echo_red "Invalid mode specified. Use 'domain' or 'url'."
+
     exit 1
+
 fi
+
