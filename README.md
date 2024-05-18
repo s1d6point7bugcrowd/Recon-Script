@@ -39,4 +39,7 @@ This reconnaissance script automates the process of gathering information about 
 ./recon.sh domain example.com
 
 
+(Replace "researcher on line 76 with your username)
+
+
 Port scanning is optional (user prompted)
