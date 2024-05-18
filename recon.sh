@@ -138,7 +138,7 @@ if [ "$MODE" == "domain" ]; then
 
     echo_green "Running awk to extract IP addresses..."
 
-    awk '{print $1}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
+    awk '/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $NF}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
 
     cat "${TARGET}-alive-subs.txt"
 
@@ -158,7 +158,7 @@ if [ "$MODE" == "domain" ]; then
 
     echo_green "Running httpx..."
 
-    httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < "${TARGET}-alive-subs.txt" | anew "${TARGET}-web-alive.txt"
+    httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < "${TARGET}-openports.txt" | anew "${TARGET}-web-alive.txt"
 
     cat "${TARGET}-web-alive.txt"
 
@@ -207,8 +207,6 @@ if [ "$MODE" == "domain" ]; then
     echo_green "Running nuclei..."
 
     awk '{print $1}' < "${TARGET}-web-alive.txt" | nuclei -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
-
-    cat "${TARGET}-web-alive.txt"
 
 
 
