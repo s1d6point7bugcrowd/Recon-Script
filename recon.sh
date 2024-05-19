@@ -86,8 +86,8 @@ if [ "$MODE" == "domain" ]; then
     dnsx -resp -silent < "${TARGET}-subs.txt" | anew "${TARGET}-alive-subs-ip.txt"
     cat "${TARGET}-alive-subs-ip.txt"
 
-    echo_green "Running awk to extract IP addresses..."
-    awk '/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/ {print $NF}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
+    echo_green "Extracting first column from dnsx output..."
+    awk '{print $1}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
     cat "${TARGET}-alive-subs.txt"
 
     if [ "$USE_NAABU" == "yes" ]; then
@@ -100,7 +100,7 @@ if [ "$MODE" == "domain" ]; then
     cat "${TARGET}-openports.txt"
 
     echo_green "Running httpx..."
-    httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < "${TARGET}-openports.txt" | anew "${TARGET}-web-alive.txt"
+    awk '{print "http://"$1}' "${TARGET}-openports.txt" | httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 | anew "${TARGET}-web-alive.txt"
     cat "${TARGET}-web-alive.txt"
 
     echo_green "Running gospider..."
@@ -134,3 +134,4 @@ else
     echo_red "Invalid mode specified. Use 'domain' or 'url'."
     exit 1
 fi
+
