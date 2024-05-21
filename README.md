@@ -1,45 +1,61 @@
-# Web Application Reconnaissance Script
+# Web Application Security Testing Automation
 
-## Disclaimer
+This repository contains a Bash script designed to automate various stages of web application security testing. It integrates multiple security tools to perform subdomain enumeration, DNS resolution, port scanning, and vulnerability scanning.
 
-**DISCLAIMER:** This script is intended for authorized penetration testing and research purposes only. Unauthorized use of this script against systems you do not own or have explicit permission to test is illegal and unethical. The author is not responsible for any misuse or damage caused by this script.
+## Features
 
-## Overview
+- **Subdomain Discovery**: Leverages `subfinder` to discover subdomains associated with a given domain.
+- **DNS Resolution**: Utilizes `dnsx` for quick DNS resolutions and to find alive subdomains.
+- **Port Scanning**: Optionally uses `Naabu` to perform fast port scanning on discovered subdomains.
+- **Content Discovery**: Integrates `waybackurls` for fetching known URLs from the Wayback Machine.
+- **Live Endpoint Testing**: Uses `httpx` to check for live web endpoints and retrieve response titles and status codes.
+- **Vulnerability Scanning**: Applies `Nuclei` for automated vulnerability scanning with custom headers to identify your testing traffic.
 
-This reconnaissance script automates the process of gathering information about a target domain or URL. It performs subdomain enumeration, resolves subdomains to IP addresses, checks for live hosts, scans for open ports, and identifies web services. The script ensures rate-limiting to comply with responsible disclosure policies and integrates various tools.
+## Prerequisites
 
-### Key Features
+Before you run the script, make sure you have the following tools installed:
+- [Subfinder](https://github.com/projectdiscovery/subfinder)
+- [Dnsx](https://github.com/projectdiscovery/dnsx)
+- [Naabu](https://github.com/projectdiscovery/naabu)
+- [Httpx](https://github.com/projectdiscovery/httpx)
+- [Waybackurls](https://github.com/tomnomnom/waybackurls)
+- [Nuclei](https://github.com/projectdiscovery/nuclei)
 
-- Subdomain enumeration and filtering
-- IP resolution and live host checking
-- Open port scanning with rate-limiting
-- Web service identification and crawling
-- Extraction and analysis of interesting URLs
-- Historical URL retrieval
+## Usage
 
-
-### Tools Integrated
-
-- `subfinder`: For subdomain enumeration
-- `dnsx`: For resolving subdomains to IP addresses
-- `naabu`: For port scanning
-- `httpx`: For checking live web services
-- `gospider`: For crawling web services
-- `unfurl`: For URL formatting
-- `gau`: For retrieving historical URLs
-- `nuclei`: For vulnerability scanning
+```bash
+./security_scan.sh <mode> <target>
 
 
-### Usage
 
-```sh
-./recon.sh <mode> <target>
+Parameters:
+
+    mode: Can be either domain or url, specifying the type of target.
+    target: The domain name or URL you want to test.
+
+Example:
+
+bash
+
+./security_scan.sh domain example.com
+
+Configuration
+
+    Custom Headers: Set up a custom header X-Bug-Bounty for the requests to identify your traffic.
+    Out-of-Scope Patterns: Define out-of-scope subdomains and URLs to exclude from testing.
+    File Management: Choose whether to store results locally or in temporary files based on your needs.
+
+Contributing
+
+Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
+License
+
+Distributed under the MIT License. See LICENSE for more information.
+Contact
 
 
-./recon.sh domain example.com
+Acknowledgments
 
+    Thanks to the developers of the integrated tools.
+    Special thanks to ProjectDiscovery for their open-source tools used in this script.
 
-(Replace "researcher" on line 67 with your username)
-
-
-Port scanning is optional (user prompted)
