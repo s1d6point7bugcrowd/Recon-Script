@@ -20,9 +20,17 @@ fi
 
 
 
-MODE="$1"  # 'domain' or 'url'
+# Normalize and trim MODE input to avoid case sensitivity and trailing space issues
+
+MODE=$(echo "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
 
 TARGET="$2"
+
+
+
+# Debugging output to check the value of MODE
+
+echo "Mode is set to: '$MODE'"
 
 
 
@@ -94,7 +102,7 @@ is_oos() {
 
 # Ensure files are created if they don't exist
 
-touch ${TARGET}-filtered-subs.txt ${TARGET}-filtered-crawled.txt ${TARGET}-filtered-gau.txt
+touch ${TARGET}-subs.txt ${TARGET}-filtered-subs.txt ${TARGET}-alive-subs-ip.txt ${TARGET}-alive-subs.txt ${TARGET}-openports.txt ${TARGET}-final-openports.txt ${TARGET}-web-alive.txt ${TARGET}-filtered-crawled.txt ${TARGET}-crawled-interesting.txt ${TARGET}-waybackurls.txt ${TARGET}-filtered-waybackurls.txt ${TARGET}-final-web-alive.txt ${TARGET}-nuclei-results.txt
 
 
 
@@ -108,55 +116,37 @@ remove_brackets() {
 
 
 
-# Conditional execution based on mode
+# Debugging function to check file content
 
-if [ "$MODE" == "domain" ]; then
+check_file_content() {
 
-    subfinder -d $TARGET -silent | anew ${TARGET}-subs.txt
+    local file=$1
 
+    echo "Debug: Checking content of $file"
 
+    if [ ! -s "$file" ]; then
 
-    while read -r subdomain; do
-
-        if is_oos "$subdomain"; then
-
-            echo "Skipping OOS subdomain: $subdomain"
-
-        else
-
-            echo "$subdomain" | anew ${TARGET}-filtered-subs.txt
-
-        fi
-
-    done < ${TARGET}-subs.txt
-
-
-
-    dnsx -resp -silent < ${TARGET}-filtered-subs.txt | anew ${TARGET}-alive-subs-ip.txt
-
-    awk '{print $1}' < ${TARGET}-alive-subs-ip.txt | anew ${TARGET}-alive-subs.txt
-
-
-
-    if [ "$USE_NAABU" == "yes" ]; then
-
-        sudo naabu -top-ports 1000 -silent < ${TARGET}-alive-subs.txt | anew ${TARGET}-openports.txt
-
-        cut -d ":" -f1 < ${TARGET}-openports.txt | anew ${TARGET}-final-openports.txt
-
-        httpx -td -silent --rate-limit 5 -title -status-code -tech-detect -mc 200,403,400,500 < ${TARGET}-final-openports.txt | remove_brackets | anew ${TARGET}-web-alive.txt
+        echo "Debug: $file is empty."
 
     else
 
-        httpx -td -silent --rate-limit 5 -title -status-code -tech-detect -mc 200,403,400,500 < ${TARGET}-alive-subs.txt | remove_brackets | anew ${TARGET}-web-alive.txt
+        echo "Debug: $file has content."
+
+        cat "$file" | head -n 10  # Display first 10 lines for inspection
 
     fi
 
+}
 
 
-    awk '{print $1}' < ${TARGET}-web-alive.txt | gospider -t 10 -o ${TARGET}crawl | anew ${TARGET}-crawled.txt
 
+# Function to filter URLs and handle out-of-scope URLs
 
+filter_urls() {
+
+    local input_file=$1
+
+    local output_file=$2
 
     while read -r url; do
 
@@ -166,39 +156,129 @@ if [ "$MODE" == "domain" ]; then
 
         else
 
-            echo "$url" | anew ${TARGET}-filtered-crawled.txt
+            echo "$url" | anew $output_file
 
         fi
 
-    done < ${TARGET}-crawled.txt
+    done < $input_file
+
+    check_file_content $output_file
+
+}
 
 
 
-    unfurl format %s://dtp < ${TARGET}-filtered-crawled.txt | httpx -td --rate-limit 5 -silent -title -status-code -tech-detect | remove_brackets | anew ${TARGET}-crawled-interesting.txt
+# Conditional execution based on mode
 
-    awk '{print $1}' < ${TARGET}-crawled-interesting.txt | gau -b eot,svg,woff,ttf,png,jpg,gif,otf,bmp,pdf,mp3,mp4,mov --subs | anew ${TARGET}-gau.txt
+if [ "$MODE" == "domain" ]; then
 
+    echo "Running subfinder..."
 
+    subfinder -d $TARGET -silent | anew ${TARGET}-subs.txt
 
-    while read -r gau_url; do
-
-        if is_oos "$gau_url"; then
-
-            echo "Skipping OOS URL: $gau_url"
-
-        else
-
-            echo "$gau_url" | anew ${TARGET}-filtered-gau.txt
-
-        fi
-
-    done < ${TARGET}-gau.txt
+    check_file_content "${TARGET}-subs.txt"
 
 
 
-    httpx -silent --rate-limit 5 -title -status-code -tech-detect -mc 200,301,302 < ${TARGET}-filtered-gau.txt | remove_brackets | anew ${TARGET}-final-web-alive.txt
+    echo "Filtering subdomains..."
 
-    awk '{print $1}' < ${TARGET}-final-web-alive.txt | nuclei -ss template-spray -H "$CUSTOM_HEADER"
+    filter_urls ${TARGET}-subs.txt ${TARGET}-filtered-subs.txt
+
+
+
+    echo "Running dnsx..."
+
+    dnsx -resp -silent < ${TARGET}-filtered-subs.txt | anew ${TARGET}-alive-subs-ip.txt
+
+    check_file_content "${TARGET}-alive-subs-ip.txt"
+
+
+
+    awk '{print $1}' < ${TARGET}-alive-subs-ip.txt | anew ${TARGET}-alive-subs.txt
+
+    check_file_content "${TARGET}-alive-subs.txt"
+
+
+
+    if [ "$USE_NAABU" == "yes" ]; then
+
+        echo "Running naabu..."
+
+        sudo naabu -top-ports 1000 -silent < ${TARGET}-alive-subs.txt | anew ${TARGET}-openports.txt
+
+        check_file_content "${TARGET}-openports.txt"
+
+
+
+        cut -d ":" -f1 < ${TARGET}-openports.txt | anew ${TARGET}-final-openports.txt
+
+        check_file_content "${TARGET}-final-openports.txt"
+
+    fi
+
+
+
+    echo "Running httpx..."
+
+    httpx -td -silent --rate-limit 5 -title -status-code < ${TARGET}-final-openports.txt | remove_brackets | anew ${TARGET}-web-alive.txt
+
+    check_file_content "${TARGET}-web-alive.txt"
+
+
+
+    echo "Running waybackurls..."
+
+    awk '{print $1}' < ${TARGET}-web-alive.txt | waybackurls | anew ${TARGET}-waybackurls.txt
+
+    check_file_content "${TARGET}-waybackurls.txt"
+
+
+
+    if [ ! -s "${TARGET}-waybackurls.txt" ]; then
+
+        echo "No data found from waybackurls. Exiting."
+
+        exit 1
+
+    fi
+
+
+
+    echo "Filtering waybackurls..."
+
+    filter_urls ${TARGET}-waybackurls.txt ${TARGET}-filtered-waybackurls.txt
+
+
+
+    echo "Running final httpx..."
+
+    httpx -td -silent --rate-limit 5 -title -status-code < ${TARGET}-filtered-waybackurls.txt | remove_brackets | anew ${TARGET}-final-web-alive.txt
+
+    check_file_content "${TARGET}-final-web-alive.txt"
+
+
+
+    # Filter URLs before sending to Nuclei based on status code
+
+    echo "Filtering URLs for Nuclei scan based on status codes..."
+
+    awk '$2 == "200" || $2 == "302" { print $1 }' ${TARGET}-final-web-alive.txt > ${TARGET}-nuclei-ready.txt
+
+
+
+    echo "URLs being sent to nuclei:"
+
+    cat ${TARGET}-nuclei-ready.txt
+
+
+
+    echo "Running nuclei..."
+
+    cat ${TARGET}-nuclei-ready.txt | nuclei -ss template-spray -rl 5 -H "$CUSTOM_HEADER" -o ${TARGET}-nuclei-results.txt
+
+    check_file_content "${TARGET}-nuclei-results.txt"
+
+    cat ${TARGET}-nuclei-results.txt
 
 
 
@@ -210,7 +290,11 @@ elif [ "$MODE" == "url" ]; then
 
     else
 
-        echo $TARGET | nuclei -include-tags misc -etags aem -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
+        echo $TARGET | nuclei -include-tags misc -etags aem -rl 5 -H "$CUSTOM_HEADER" -o ${TARGET}-nuclei-results.txt
+
+        check_file_content "${TARGET}-nuclei-results.txt"
+
+        cat ${TARGET}-nuclei-results.txt
 
     fi
 
