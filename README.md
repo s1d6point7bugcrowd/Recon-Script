@@ -51,7 +51,6 @@ Contributions are welcome! Please read the contributing guidelines before submit
 License
 
 Distributed under the MIT License. See LICENSE for more information.
-Contact
 
 
 Acknowledgments
