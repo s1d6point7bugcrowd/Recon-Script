@@ -2,541 +2,213 @@
 
 
 
-
-
-
-
-# Function to print text in red color
-
-
-
-echo_red() {
-
-
-
-    echo -e "\e[31m$1\e[0m"
-
-
-
-}
-
-
-
-
-
-
-
-# Function to print text in green color
-
-
-
-echo_green() {
-
-
-
-    echo -e "\e[32m$1\e[0m"
-
-
-
-}
-
-
-
-
-
-
-
 # Check if sufficient arguments are passed
-
-
 
 if [ "$#" -lt 2 ]; then
 
+    echo "Usage: $0 <mode> <target>"
 
+    echo "Modes:"
 
-    echo_red "Usage: $0 <mode> <target>"
+    echo "  domain    Target is a domain name"
 
-
-
-    echo_red "Modes:"
-
-
-
-    echo_red "  domain   Target is a domain name"
-
-
-
-    echo_red "  url      Target is a specific URL"
-
-
+    echo "  url       Target is a specific URL"
 
     exit 1
-
-
 
 fi
 
 
 
-
-
-
-
-MODE="$1" # 'domain' or 'url'
-
-
+MODE="$1"  # 'domain' or 'url'
 
 TARGET="$2"
 
 
 
-
-
-
-
 # Prompt for the program name
-
-
 
 read -p "Enter the program name for the X-Bug-Bounty header: " PROGRAM_NAME
 
 
 
-
-
-
-
 # Validate the program name input
-
-
 
 if [ -z "$PROGRAM_NAME" ]; then
 
-
-
-    echo_red "Program name is required. Exiting."
-
-
+    echo "Program name is required. Exiting."
 
     exit 1
 
-
-
 fi
 
 
 
+# Prompt for OOS subdomains and URLs
 
+read -p "Enter OOS subdomains and URLs (comma separated): " OOS_INPUT
 
 
 
-# Prompt for OOS subdomains (comma-separated)
+# Convert the OOS input to an array
 
+IFS=',' read -r -a OOS_PATTERNS <<< "$OOS_INPUT"
 
 
-read -p "Enter Out-Of-Scope subdomains (comma-separated, leave blank for none): " OOS_SUBDOMAINS
 
+# Prompt for using Naabu for port scanning
 
-
-
-
-
-
-# Prompt for OOS URLs (comma-separated)
-
-
-
-read -p "Enter Out-Of-Scope URLs (comma-separated, leave blank for none): " OOS_URLS
-
-
-
-
-
-
-
-# Prompt for using naabu for port scanning
-
-
-
-read -p "Do you want to use naabu for port scanning? (yes/no): " USE_NAABU
-
-
-
-
-
-
-
-# Convert OOS subdomains into grep-friendly patterns
-
-
-
-if [ -n "$OOS_SUBDOMAINS" ]; then
-
-
-
-    OOS_SUB_PATTERNS=$(echo "$OOS_SUBDOMAINS" | tr ',' '\n')
-
-
-
-    SUB_FILTER_CMD="grep -vFf <(echo \"$OOS_SUB_PATTERNS\")"
-
-
-
-else
-
-
-
-    SUB_FILTER_CMD="cat"
-
-
-
-fi
-
-
-
-
-
-
-
-# Convert OOS URLs into grep-friendly patterns
-
-
-
-if [ -n "$OOS_URLS" ]; then
-
-
-
-    OOS_URL_PATTERNS=$(echo "$OOS_URLS" | tr ',' '\n')
-
-
-
-    URL_FILTER_CMD="grep -vFf <(echo \"$OOS_URL_PATTERNS\")"
-
-
-
-else
-
-
-
-    URL_FILTER_CMD="cat"
-
-
-
-fi
-
-
-
-
-
-
-
-# Show the excluded subdomains
-
-
-
-if [ -n "$OOS_SUBDOMAINS" ]; then
-
-
-
-    echo_red "The following subdomains will be excluded from scanning:"
-
-
-
-    echo_red "$OOS_SUBDOMAINS"
-
-
-
-else
-
-
-
-    echo_red "No subdomains will be excluded from scanning."
-
-
-
-fi
-
-
-
-
-
-
-
-# Show the excluded URLs
-
-
-
-if [ -n "$OOS_URLS" ]; then
-
-
-
-    echo_red "The following URLs will be excluded from scanning:"
-
-
-
-    echo_red "$OOS_URLS"
-
-
-
-else
-
-
-
-    echo_red "No URLs will be excluded from scanning."
-
-
-
-fi
-
-
-
-
+read -p "Do you want to use Naabu for port scanning? (yes/no): " USE_NAABU
 
 
 
 # Construct the custom header
 
-
-
 CUSTOM_HEADER="X-Bug-Bounty:researcher@$PROGRAM_NAME"
 
-
-
-echo_red "Using custom header: $CUSTOM_HEADER"
-
+echo "Using custom header: $CUSTOM_HEADER"
 
 
 
+# Function to check if a target is out of scope
+
+is_oos() {
+
+    local target=$1
+
+    for pattern in "${OOS_PATTERNS[@]}"; do
+
+        if [[ "$target" == *"$pattern"* ]]; then
+
+            return 0
+
+        fi
+
+    done
+
+    return 1
+
+}
+
+
+
+# Ensure files are created if they don't exist
+
+touch ${TARGET}-filtered-subs.txt ${TARGET}-filtered-crawled.txt ${TARGET}-filtered-gau.txt
 
 
 
 # Conditional execution based on mode
 
-
-
 if [ "$MODE" == "domain" ]; then
 
-
-
-    echo_green "Running subfinder..."
-
-
-
-    subfinder -d "$TARGET" -silent | eval "$SUB_FILTER_CMD" | anew "${TARGET}-subs.txt"
+    subfinder -d $TARGET -silent | anew ${TARGET}-subs.txt
 
 
 
-    cat "${TARGET}-subs.txt"
+    while read -r subdomain; do
+
+        if is_oos "$subdomain"; then
+
+            echo "Skipping OOS subdomain: $subdomain"
+
+        else
+
+            echo "$subdomain" | anew ${TARGET}-filtered-subs.txt
+
+        fi
+
+    done < ${TARGET}-subs.txt
 
 
 
+    dnsx -resp -silent < ${TARGET}-filtered-subs.txt | anew ${TARGET}-alive-subs-ip.txt
 
-
-
-
-    echo_green "Running dnsx..."
-
-
-
-    dnsx -resp -silent < "${TARGET}-subs.txt" | anew "${TARGET}-alive-subs-ip.txt"
-
-
-
-    cat "${TARGET}-alive-subs-ip.txt"
-
-
-
-
-
-
-
-    echo_green "Extracting first column from dnsx output..."
-
-
-
-    awk '{print $1}' < "${TARGET}-alive-subs-ip.txt" | anew "${TARGET}-alive-subs.txt"
-
-
-
-    cat "${TARGET}-alive-subs.txt"
-
-
-
-
+    awk '{print $1}' < ${TARGET}-alive-subs-ip.txt | anew ${TARGET}-alive-subs.txt
 
 
 
     if [ "$USE_NAABU" == "yes" ]; then
 
+        sudo naabu -top-ports 1000 -silent < ${TARGET}-alive-subs.txt | anew ${TARGET}-openports.txt
 
+        cut -d ":" -f1 < ${TARGET}-openports.txt | sudo naabu | anew ${TARGET}-openports.txt
 
-        echo_green "Running naabu for port scanning..."
-
-
-
-        sudo naabu -top-ports 1000 -c 25 -silent < "${TARGET}-alive-subs.txt" | anew "${TARGET}-openports.txt"
-
-
+        httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < ${TARGET}-openports.txt | anew ${TARGET}-web-alive.txt
 
     else
 
-
-
-        echo_green "Skipping naabu. Using alive subs for further scanning..."
-
-
-
-        cp "${TARGET}-alive-subs.txt" "${TARGET}-openports.txt"
-
-
+        httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < ${TARGET}-alive-subs.txt | anew ${TARGET}-web-alive.txt
 
     fi
 
 
 
-    cat "${TARGET}-openports.txt"
+    awk '{print $1}' < ${TARGET}-web-alive.txt | gospider -t 10 -o ${TARGET}crawl | anew ${TARGET}-crawled.txt
 
 
 
+    while read -r url; do
 
+        if is_oos "$url"; then
 
+            echo "Skipping OOS URL: $url"
 
+        else
 
-    echo_green "Running httpx..."
+            echo "$url" | anew ${TARGET}-filtered-crawled.txt
 
+        fi
 
+    done < ${TARGET}-crawled.txt
 
-    awk '{print "http://"$1}' "${TARGET}-openports.txt" | httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 | anew "${TARGET}-web-alive.txt"
 
 
+    unfurl format %s://dtp < ${TARGET}-filtered-crawled.txt | httpx -td --rate-limit 5 -silent -title -status-code | anew ${TARGET}-crawled-interesting.txt
 
-    cat "${TARGET}-web-alive.txt"
+    awk '{print $1}' < ${TARGET}-crawled-interesting.txt | gau -b eot,svg,woff,ttf,png,jpg,gif,otf,bmp,pdf,mp3,mp4,mov --subs | anew ${TARGET}-gau.txt
 
 
 
+    while read -r gau_url; do
 
+        if is_oos "$gau_url"; then
 
+            echo "Skipping OOS URL: $gau_url"
 
+        else
 
-    echo_green "Running gospider..."
+            echo "$gau_url" | anew ${TARGET}-filtered-gau.txt
 
+        fi
 
+    done < ${TARGET}-gau.txt
 
-    awk '{print $1}' < "${TARGET}-web-alive.txt" | gospider -t 10 -o "${TARGET}crawl" | anew "${TARGET}-crawled.txt"
 
 
+    httpx -silent --rate-limit 5 -title -status-code -mc 200,301,302 < ${TARGET}-filtered-gau.txt | anew ${TARGET}-web-alive.txt
 
-    cat "${TARGET}-crawled.txt"
-
-
-
-
-
-
-
-    echo_green "Running unfurl..."
-
-
-
-    unfurl format %s://%d%p < "${TARGET}-crawled.txt" | httpx -td --rate-limit 5 -silent -title -status-code | anew "${TARGET}-crawled-interesting.txt"
-
-
-
-    cat "${TARGET}-crawled-interesting.txt"
-
-
-
-
-
-
-
-    echo_green "Running grep for interesting endpoints..."
-
-
-
-    grep -E "(admin|dashboard|control|panel|manage|login|signin|signup|register|backup|config|secret|token|error|api|v1|v2|graphql|\\.js)" "${TARGET}-crawled-interesting.txt" | anew "${TARGET}-interesting.txt"
-
-
-
-    cat "${TARGET}-interesting.txt"
-
-
-
-
-
-
-
-    echo_green "Running gau..."
-
-
-
-    awk '{print $1}' < "${TARGET}-interesting.txt" | gau -b eot,svg,woff,ttf,png,jpg,gif,otf,bmp,pdf,mp3,mp4,mov --subs | anew "${TARGET}-gau.txt"
-
-
-
-    cat "${TARGET}-gau.txt"
-
-
-
-
-
-
-
-    echo_green "Running httpx on gau results..."
-
-
-
-    httpx -silent --rate-limit 5 -title -status-code -mc 200,301,302 < "${TARGET}-gau.txt" | eval "$URL_FILTER_CMD" | anew "${TARGET}-web-alive.txt"
-
-
-
-    cat "${TARGET}-web-alive.txt"
-
-
-
-
-
-
-
-    echo_green "Running nuclei..."
-
-
-
-    awk '{print $1}' < "${TARGET}-web-alive.txt" | nuclei -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
-
-
-
-
+    awk '{print $1}' < ${TARGET}-web-alive.txt | nuclei -include-tags misc -etags aem -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
 
 
 
 elif [ "$MODE" == "url" ]; then
 
+    if is_oos "$TARGET"; then
 
+        echo "Skipping OOS URL: $TARGET"
 
-    echo_green "Running nuclei on the specified URL..."
+    else
 
+        echo $TARGET | nuclei -include-tags misc -etags aem -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
 
-
-    echo "$TARGET" | nuclei -include-tags misc -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
-
-
-
-
-
-
+    fi
 
 else
 
-
-
-    echo_red "Invalid mode specified. Use 'domain' or 'url'."
-
-
+    echo "Invalid mode specified. Use 'domain' or 'url'."
 
     exit 1
-
-
 
 fi
 
