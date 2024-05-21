@@ -98,6 +98,16 @@ touch ${TARGET}-filtered-subs.txt ${TARGET}-filtered-crawled.txt ${TARGET}-filte
 
 
 
+# Function to remove brackets from IP addresses
+
+remove_brackets() {
+
+    sed 's/\[\([^]]*\)\]/\1/g'
+
+}
+
+
+
 # Conditional execution based on mode
 
 if [ "$MODE" == "domain" ]; then
@@ -132,13 +142,13 @@ if [ "$MODE" == "domain" ]; then
 
         sudo naabu -top-ports 1000 -silent < ${TARGET}-alive-subs.txt | anew ${TARGET}-openports.txt
 
-        cut -d ":" -f1 < ${TARGET}-openports.txt | sudo naabu | anew ${TARGET}-openports.txt
+        cut -d ":" -f1 < ${TARGET}-openports.txt | anew ${TARGET}-final-openports.txt
 
-        httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < ${TARGET}-openports.txt | anew ${TARGET}-web-alive.txt
+        httpx -td -silent --rate-limit 5 -title -status-code -tech-detect -mc 200,403,400,500 < ${TARGET}-final-openports.txt | remove_brackets | anew ${TARGET}-web-alive.txt
 
     else
 
-        httpx -td -silent --rate-limit 5 -title -status-code -mc 200,403,400,500 < ${TARGET}-alive-subs.txt | anew ${TARGET}-web-alive.txt
+        httpx -td -silent --rate-limit 5 -title -status-code -tech-detect -mc 200,403,400,500 < ${TARGET}-alive-subs.txt | remove_brackets | anew ${TARGET}-web-alive.txt
 
     fi
 
@@ -164,7 +174,7 @@ if [ "$MODE" == "domain" ]; then
 
 
 
-    unfurl format %s://dtp < ${TARGET}-filtered-crawled.txt | httpx -td --rate-limit 5 -silent -title -status-code | anew ${TARGET}-crawled-interesting.txt
+    unfurl format %s://dtp < ${TARGET}-filtered-crawled.txt | httpx -td --rate-limit 5 -silent -title -status-code -tech-detect | remove_brackets | anew ${TARGET}-crawled-interesting.txt
 
     awk '{print $1}' < ${TARGET}-crawled-interesting.txt | gau -b eot,svg,woff,ttf,png,jpg,gif,otf,bmp,pdf,mp3,mp4,mov --subs | anew ${TARGET}-gau.txt
 
@@ -186,9 +196,9 @@ if [ "$MODE" == "domain" ]; then
 
 
 
-    httpx -silent --rate-limit 5 -title -status-code -mc 200,301,302 < ${TARGET}-filtered-gau.txt | anew ${TARGET}-web-alive.txt
+    httpx -silent --rate-limit 5 -title -status-code -tech-detect -mc 200,301,302 < ${TARGET}-filtered-gau.txt | remove_brackets | anew ${TARGET}-final-web-alive.txt
 
-    awk '{print $1}' < ${TARGET}-web-alive.txt | nuclei -include-tags misc -etags aem -rl 5 -ss template-spray -H "$CUSTOM_HEADER"
+    awk '{print $1}' < ${TARGET}-final-web-alive.txt | nuclei -ss template-spray -H "$CUSTOM_HEADER"
 
 
 
