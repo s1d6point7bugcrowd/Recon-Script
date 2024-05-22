@@ -64,26 +64,6 @@ File Outputs
 
 
 
-(default) waybackurls <target> -filter "status_code:200"|sort -u
-Adjust waybackurls as needed:
-
-    waybackurls <target>: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target.
-    waybackurls <target> -json: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target in JSON format.
-    waybackurls <target> | grep <keyword>: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target that contain the specified keyword.
-    waybackurls <target> | sort -u: This command retrieves all the unique URLs of the Wayback Machine archive for the specified domain or target.
-    waybackurls <target> | httprobe: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target and tests them for HTTP/HTTPS connectivity.
-
-Advanced Usage
-
-    waybackurls <target> | grep -Eo "(http|https)://[a-zA-Z0-9./?=_%:-]*"|sort -u: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target, and uses regex to extract only the URLs that begin with "http" or "https".
-    waybackurls <target> -exclude <exclude-file>: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target, but excludes the URLs listed in the specified file.
-    waybackurls <target> -filter "status_code:200"|sort -u: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target that return a 200 status code.
-    waybackurls <target> | unfurl paths | sort | uniq -c | sort -rn: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target, extracts only the paths, and sorts them by the number of occurrences to identify the most commonly accessed paths.
-    waybackurls <target> | xargs -I{} curl -s -L -I -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0" {} | grep -iE "x-frame-options|content-security-policy": This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target, and tests them for X-Frame-Options and Content-Security-Policy headers.
-
-
-
-
 Disclaimer
 
 Important: This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical.
