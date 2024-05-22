@@ -79,11 +79,10 @@ File Outputs
     new-urls.txt: New URLs discovered by waybackurls.
 
 
-    Often web developers keep making changes to the website’s front end, not the back end. If we only see the current web pages, we might miss out a few of the interesting endpoints which the developer removed from the page but still exist in the back end. 
+    "Often web developers keep making changes to the website’s front end, not the back end. If we only see the current web pages, we might miss out a few of the interesting endpoints which the developer removed from the page but still exist in the back end." 
 
-    Sometimes when some flaws are found in websites, instead of fixing the flaw, developers just remove it from the website. The thinking behind this is that if this is removed from the site then it cannot be accessed as people will never know about it.  
+    "Sometimes when some flaws are found in websites, instead of fixing the flaw, developers just remove it from the website. The thinking behind this is that if this is removed from the site then it cannot be accessed as people will never know about it. Using the Wayback machine we can get new endpoints and increase our attack surface."     Credit: https://security.packt.com/using-waybackurls-to-find-flaws/
 
-Using the Wayback machine we can get new endpoints and increase our attack surface.
 
 
 
