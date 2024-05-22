@@ -62,6 +62,8 @@ File Outputs
     new-urls.txt: New URLs discovered by waybackurls.
 
 
+
+
 (default) waybackurls <target> -filter "status_code:200"|sort -u
 Adjust waybackurls as needed:
 
