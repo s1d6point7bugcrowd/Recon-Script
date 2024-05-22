@@ -62,7 +62,7 @@ File Outputs
     new-urls.txt: New URLs discovered by waybackurls.
 
 
-
+(default) waybackurls <target> -filter "status_code:200"|sort -u
 Adjust waybackurls as needed:
 
     waybackurls <target>: This command retrieves all the URLs of the Wayback Machine archive for the specified domain or target.
