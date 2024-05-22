@@ -175,7 +175,7 @@ if [ "$MODE" == "domain" ]; then
 
     if [ "$USE_WAYBACKURLS" == "yes" ]; then
         echo -e "\033[33mRunning waybackurls...\033[0m"
-        waybackurls $TARGET | sort -u | anew $WAYBACK_URLS_FILE
+        waybackurls $TARGET -filter "status_code:200" | sort -u | anew $WAYBACK_URLS_FILE
         check_file_content "$WAYBACK_URLS_FILE"
 
         if [ ! -s "$WAYBACK_URLS_FILE" ]; then
