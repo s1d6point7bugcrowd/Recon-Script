@@ -79,6 +79,9 @@ File Outputs
     new-urls.txt: New URLs discovered by waybackurls.
 
 
+
+
+
 Web developers frequently update the front end of websites, but these changes often do not reflect the back end. As a result, certain endpoints may still exist on the server even though they are no longer visible on the website. If security vulnerabilities are discovered, developers sometimes simply remove the links to these endpoints rather than fixing the underlying issues. This creates a false sense of security, as the endpoints remain accessible to those who know where to look.
 
 To uncover these hidden or forgotten endpoints and expand the attack surface, security testers can use the Wayback Machine. This tool archives web pages over time, allowing testers to retrieve historical URLs that may lead to still-active endpoints. By analyzing these URLs, testers can find and exploit security flaws that are no longer visible on the current version of the website. This approach ensures a more thorough security assessment by identifying potential vulnerabilities that might otherwise be overlooked.
