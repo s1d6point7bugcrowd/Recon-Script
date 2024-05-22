@@ -78,6 +78,15 @@ File Outputs
     nuclei-results.txt: Results from nuclei scan.
     new-urls.txt: New URLs discovered by waybackurls.
 
+
+    Often web developers keep making changes to the website’s front end, not the back end. If we only see the current web pages, we might miss out a few of the interesting endpoints which the developer removed from the page but still exist in the back end. 
+
+    Sometimes when some flaws are found in websites, instead of fixing the flaw, developers just remove it from the website. The thinking behind this is that if this is removed from the site then it cannot be accessed as people will never know about it.  
+
+Using the Wayback machine we can get new endpoints and increase our attack surface.
+
+
+
 Disclaimer
 
 Important: This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical. The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test.
