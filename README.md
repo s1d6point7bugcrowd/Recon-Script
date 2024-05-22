@@ -38,12 +38,34 @@ Example:
 bash
 
 ./security_scan.sh domain example.com
+Prompted Inputs
 
-Configuration
+    Program Name: For the X-Bug-Bounty header.
+    OOS Subdomains and URLs: Comma-separated list of out-of-scope patterns.
+    Use Naabu: Whether to use naabu for port scanning.
+    Store Files Locally: Whether to store files locally or use mktemp.
+    Use Waybackurls: Whether to use waybackurls for historical URL discovery.
 
-    Custom Headers: Set up a custom header X-Bug-Bounty for the requests to identify your traffic.
-    Out-of-Scope Patterns: Define out-of-scope subdomains and URLs to exclude from testing.
-    File Management: Choose whether to store results locally or in temporary files based on your needs.
+File Outputs
+
+    subs.txt: Discovered subdomains.
+    filtered-subs.txt: Filtered subdomains.
+    alive-subs-ip.txt: Alive subdomains with IP addresses.
+    alive-subs.txt: Alive subdomains.
+    openports.txt: Open ports found by naabu.
+    final-openports.txt: Filtered open ports.
+    web-alive.txt: Web hosts that are alive.
+    waybackurls.txt: URLs discovered by waybackurls.
+    filtered-waybackurls.txt: Filtered wayback URLs.
+    nuclei-ready.txt: URLs ready for nuclei scan.
+    nuclei-results.txt: Results from nuclei scan.
+    new-urls.txt: New URLs discovered by waybackurls.
+
+Disclaimer
+
+Important: This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical.
+
+The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test.
 
 Contributing
 
