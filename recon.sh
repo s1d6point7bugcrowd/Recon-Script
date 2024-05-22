@@ -127,7 +127,7 @@ run_subfinder_dnsx_httpx() {
     check_file_content "$ALIVE_SUBS_FILE"
 
     echo -e "\033[33mRunning httpx...\033[0m"
-    httpx -silent --rate-limit 5 -title -status-code -mc 200,302 < $ALIVE_SUBS_FILE | remove_brackets | anew $WEB_ALIVE_FILE
+    httpx -silent --rate-limit 5 -title -status-code -mc 200 < $ALIVE_SUBS_FILE | remove_brackets | anew $WEB_ALIVE_FILE
     check_file_content "$WEB_ALIVE_FILE"
 
     # No additional filtering needed, as httpx already filtered status codes 200 and 302
@@ -159,7 +159,7 @@ if [ "$MODE" == "domain" ]; then
         check_file_content "$FINAL_OPEN_PORTS_FILE"
 
         echo -e "\033[33mRunning httpx...\033[0m"
-        httpx -silent --rate-limit 5 -title -status-code -mc 200,302 < $FINAL_OPEN_PORTS_FILE | remove_brackets | anew $WEB_ALIVE_FILE
+        httpx -silent --rate-limit 5 -title -status-code -mc 200 < $FINAL_OPEN_PORTS_FILE | remove_brackets | anew $WEB_ALIVE_FILE
         check_file_content "$WEB_ALIVE_FILE"
 
         # No additional filtering needed, as httpx already filtered status codes 200 and 302
