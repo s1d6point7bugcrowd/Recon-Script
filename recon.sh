@@ -420,7 +420,7 @@ if [ "$MODE" == "domain" ]; then
 
     echo -e "\033[33mRunning nuclei...\033[0m"
 
-    cat $NUCLEI_READY_FILE | nuclei -ss template-spray -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
+    cat $NUCLEI_READY_FILE | nuclei -ss template-spray -s critical,high,medium -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
 
     check_file_content "$NUCLEI_RESULTS_FILE"
 
@@ -436,7 +436,7 @@ elif [ "$MODE" == "url" ]; then
 
     else
 
-        echo $TARGET | nuclei -include-tags misc -etags aem -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
+        echo $TARGET | nuclei -include-tags misc -etags aem -s critical,high,medium -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
 
         check_file_content "$NUCLEI_RESULTS_FILE"
 
