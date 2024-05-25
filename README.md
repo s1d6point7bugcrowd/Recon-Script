@@ -137,6 +137,14 @@ Enter the path(s) to Nuclei templates or tags (comma separated):
 The script will then proceed to perform the recon and vulnerability scanning based on the inputs provided.
 
 
+In essence, Waybackurls offers a valuable asset for recon by:
+
+    Revealing historical URLs that might no longer be accessible through standard browsing.
+    Exposing potential vulnerabilities present in past versions of the website that could still be exploitable.
+
+By incorporating Waybackurls into your recon workflow, you can gain a more comprehensive understanding of the target's attack surface and identify security weaknesses that might otherwise be overlooked.
+
+
 
 Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
 License
