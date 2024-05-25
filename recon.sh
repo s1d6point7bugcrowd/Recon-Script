@@ -142,7 +142,10 @@ filter_waybackurls() {
     while read -r url; do
         # Check if URL matches the exact target domain
         if [[ "$url" == "$TARGET"* ]]; then
-            echo "$url" | anew $output_file
+            # Filter by path patterns
+            if [[ "$url" =~ /admin|/login|/api|/dashboard ]]; then
+                echo "$url" | anew $output_file
+            fi
         fi
     done < $input_file
     check_file_content $output_file
