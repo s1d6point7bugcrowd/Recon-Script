@@ -144,21 +144,9 @@ run_subfinder_dnsx_httpx() {
 
 # Conditional execution based on mode
 if [ "$MODE" == "domain" ]; then
+    run_subfinder_dnsx_httpx
+
     if [ "$USE_NAABU" == "yes" ]; then
-        echo -e "\033[33mRunning subfinder...\033[0m"
-        subfinder -d $TARGET -silent | anew $SUBS_FILE
-        check_file_content "$SUBS_FILE"
-
-        echo -e "\033[33mFiltering subdomains...\033[0m"
-        filter_urls $SUBS_FILE $FILTERED_SUBS_FILE
-
-        echo -e "\033[33mRunning dnsx...\033[0m"
-        dnsx -resp -silent < $FILTERED_SUBS_FILE | anew $ALIVE_SUBS_IP_FILE
-        check_file_content "$ALIVE_SUBS_IP_FILE"
-
-        awk '{print $1}' < $ALIVE_SUBS_IP_FILE | anew $ALIVE_SUBS_FILE
-        check_file_content "$ALIVE_SUBS_FILE"
-
         echo -e "\033[33mRunning naabu...\033[0m"
         sudo naabu -top-ports 1000 -silent < $ALIVE_SUBS_FILE | anew $OPEN_PORTS_FILE
         check_file_content "$OPEN_PORTS_FILE"
@@ -166,14 +154,12 @@ if [ "$MODE" == "domain" ]; then
         cut -d ":" -f1 < $OPEN_PORTS_FILE | anew $FINAL_OPEN_PORTS_FILE
         check_file_content "$FINAL_OPEN_PORTS_FILE"
 
-        echo -e "\033[33mRunning httpx...\033[0m"
+        echo -e "\033[33mRunning httpx on open ports...\033[0m"
         httpx -silent --rate-limit 5 -title -status-code -mc 200 < $FINAL_OPEN_PORTS_FILE | remove_brackets | anew $WEB_ALIVE_FILE
         check_file_content "$WEB_ALIVE_FILE"
 
         # No additional filtering needed, as httpx already filtered status codes 200 and 302
         cp $WEB_ALIVE_FILE $NUCLEI_READY_FILE
-    else
-        run_subfinder_dnsx_httpx
     fi
 
     if [ ! -s "$WEB_ALIVE_FILE" ]; then
