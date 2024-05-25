@@ -40,6 +40,22 @@ read -p "Do you want to store files locally? (yes/no): " STORE_LOCALLY
 # Prompt for using waybackurls
 read -p "Do you want to use waybackurls? (yes/no): " USE_WAYBACKURLS
 
+# Prompt for using specific Nuclei templates or tags
+read -p "Do you want to use specific Nuclei templates or tags? (yes/no): " USE_SPECIFIC_TEMPLATES_OR_TAGS
+
+if [ "$USE_SPECIFIC_TEMPLATES_OR_TAGS" == "yes" ]; then
+    read -p "Enter the path(s) to Nuclei templates or tags (comma separated): " NUCLEI_TEMPLATES_OR_TAGS
+    if [[ $NUCLEI_TEMPLATES_OR_TAGS == *"/"* ]]; then
+        # If input contains "/", treat it as template paths
+        NUCLEI_TEMPLATES_OPTION="-t $(echo $NUCLEI_TEMPLATES_OR_TAGS | tr ',' ' ')"
+    else
+        # Otherwise, treat it as tags
+        NUCLEI_TEMPLATES_OPTION="-tags $(echo $NUCLEI_TEMPLATES_OR_TAGS | tr ',' ' ')"
+    fi
+else
+    NUCLEI_TEMPLATES_OPTION="-ss template-spray -include-tags misc -etags aem -s critical,high,medium"
+fi
+
 # Define a function to create files based on user's choice
 create_file() {
     if [ "$STORE_LOCALLY" == "yes" ]; then
@@ -203,7 +219,7 @@ if [ "$MODE" == "domain" ]; then
     cat $NUCLEI_READY_FILE
 
     echo -e "\033[33mRunning nuclei...\033[0m"
-    cat $NUCLEI_READY_FILE | nuclei -ss template-spray -include-tags misc -etags aem -s critical,high,medium -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
+    cat $NUCLEI_READY_FILE | nuclei $NUCLEI_TEMPLATES_OPTION -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
     check_file_content "$NUCLEI_RESULTS_FILE"
     cat "$NUCLEI_RESULTS_FILE"
 
@@ -252,7 +268,7 @@ elif [ "$MODE" == "url" ]; then
         cat $NUCLEI_READY_FILE
 
         echo -e "\033[33mRunning nuclei...\033[0m"
-        cat $NUCLEI_READY_FILE | nuclei -include-tags misc -etags aem -s critical,high,medium -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
+        cat $NUCLEI_READY_FILE | nuclei $NUCLEI_TEMPLATES_OPTION -rl 5 -H "$CUSTOM_HEADER" -o $NUCLEI_RESULTS_FILE
         check_file_content "$NUCLEI_RESULTS_FILE"
         cat "$NUCLEI_RESULTS_FILE"
     fi
