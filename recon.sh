@@ -53,6 +53,7 @@ if [ "$USE_SPECIFIC_TEMPLATES_OR_TAGS" == "yes" ]; then
         NUCLEI_TEMPLATES_OPTION="-tags $(echo $NUCLEI_TEMPLATES_OR_TAGS | tr ',' ' ')"
     fi
 else
+    # Default Nuclei command options
     NUCLEI_TEMPLATES_OPTION="-ss template-spray -include-tags misc -etags aem -s critical,high,medium"
 fi
 
@@ -131,6 +132,19 @@ filter_blacklisted_urls() {
     local input_file=$1
     local output_file=$2
     grep -Ev '\.eot$|\.svg$|\.woff$|\.ttf$|\.png$|\.jpg$|\.gif$|\.otf$|\.bmp$|\.pdf$|\.mp3$|\.mp4$|\.mov$' $input_file | anew $output_file
+    check_file_content $output_file
+}
+
+# Function to filter out subdomains and other out-of-scope URLs from waybackurls
+filter_waybackurls() {
+    local input_file=$1
+    local output_file=$2
+    while read -r url; do
+        # Check if URL matches the exact target domain
+        if [[ "$url" == "$TARGET"* ]]; then
+            echo "$url" | anew $output_file
+        fi
+    done < $input_file
     check_file_content $output_file
 }
 
@@ -246,7 +260,7 @@ elif [ "$MODE" == "url" ]; then
             fi
 
             echo -e "\033[33mFiltering waybackurls...\033[0m"
-            filter_blacklisted_urls $WAYBACK_URLS_FILE $FILTERED_WAYBACK_URLS_FILE
+            filter_waybackurls $WAYBACK_URLS_FILE $FILTERED_WAYBACK_URLS_FILE
 
             echo -e "\033[33mRunning httpx on waybackurls...\033[0m"
             cat $FILTERED_WAYBACK_URLS_FILE | httpx -silent -title -status-code -td -mc 200 | anew $NUCLEI_READY_FILE
