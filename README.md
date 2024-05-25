@@ -47,7 +47,7 @@ Parameters
 
 Example
 
-bash
+
 
 ./recon.sh domain example.com
 
@@ -88,49 +88,49 @@ Example Workflow
 
     Run the script with domain mode:
 
-    bash
+    
 
 ./recon.sh domain example.com
 
 Enter the program name for the custom header:
 
-plaintext
+
 
 Enter the program name for the X-Bug-Bounty header: mybugbountyprogram
 
 Enter OOS subdomains and URLs:
 
-plaintext
+
 
 Enter OOS subdomains and URLs (comma separated): oos.example.com,anotheroos.example.com
 
 Choose whether to use naabu for port scanning:
 
-plaintext
+
 
 Do you want to use Naabu for port scanning? (yes/no): yes
 
 Choose whether to store files locally:
 
-plaintext
+
 
 Do you want to store files locally? (yes/no): no
 
 Choose whether to use waybackurls:
 
-plaintext
+
 
 Do you want to use waybackurls? (yes/no): yes
 
 Choose whether to use specific Nuclei templates or tags:
 
-plaintext
+
 
 Do you want to use specific Nuclei templates or tags? (yes/no): yes
 
 Enter the path(s) to Nuclei templates or tags (comma separated):
 
-plaintext
+
 
     Enter the path(s) to Nuclei templates or tags (comma separated): tags,other-tags
 
