@@ -1,102 +1,142 @@
-# Web Application Security Testing Automation
+Disclaimer
 
-**Disclaimer:**
-This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical. The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test.
+Important: This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical. The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test.
 
-## Table of Contents
 
-1. [Introduction](#introduction)
-2. [Features](#features)
-3. [Prerequisites](#prerequisites)
-4. [Usage](#usage)
-5. [Prompted Inputs](#prompted-inputs)
-6. [File Outputs](#file-outputs)
-7. [Disclaimer](#disclaimer)
-8. [Contributing](#contributing)
-9. [License](#license)
-10. [Acknowledgments](#acknowledgments)
 
-## Introduction
+# Automated Recon and Vulnerability Scanning Script
 
-This repository contains a Bash script designed to automate various stages of web application security testing. It integrates multiple security tools to perform subdomain enumeration, DNS resolution, port scanning, and vulnerability scanning.
+This script automates the process of reconnaissance and vulnerability scanning on a given domain or URL. It uses various tools like `subfinder`, `dnsx`, `httpx`, `naabu`, `waybackurls`, and `nuclei` to perform these tasks.
 
 ## Features
 
-- **Subdomain Discovery**: Leverages `subfinder` to discover subdomains associated with a given domain.
-- **DNS Resolution**: Utilizes `dnsx` for quick DNS resolutions and to find alive subdomains.
-- **Port Scanning**: Optionally uses `Naabu` to perform fast port scanning on discovered subdomains.
-- **Content Discovery**: Integrates `waybackurls` for fetching known URLs from the Wayback Machine.
-- **Live Endpoint Testing**: Uses `httpx` to check for live web endpoints and retrieve response titles and status codes.
-- **Vulnerability Scanning**: Applies `Nuclei` for automated vulnerability scanning with custom headers to identify your testing traffic.
+- Subdomain discovery using `subfinder`
+- DNS resolution using `dnsx`
+- HTTP probing using `httpx`
+- Port scanning using `naabu` (optional)
+- Historical URL discovery using `waybackurls` (optional)
+- Vulnerability scanning using `nuclei`
+- Custom headers for bug bounty programs
+- Out-of-scope (OOS) subdomain and URL filtering
+- Blacklisted file type filtering
 
 ## Prerequisites
 
-Before you run the script, make sure you have the following tools installed:
-- [Subfinder](https://github.com/projectdiscovery/subfinder)
-- [Dnsx](https://github.com/projectdiscovery/dnsx)
-- [Naabu](https://github.com/projectdiscovery/naabu)
-- [Httpx](https://github.com/projectdiscovery/httpx)
-- [Waybackurls](https://github.com/tomnomnom/waybackurls)
-- [Nuclei](https://github.com/projectdiscovery/nuclei)
+Make sure you have the following tools installed and added to your PATH:
+
+- subfinder
+- dnsx
+- httpx
+- naabu (optional)
+- waybackurls (optional)
+- nuclei
 
 ## Usage
 
 ```bash
-./security_scan.sh <mode> <target>
+./recon.sh <mode> <target>
 
 
 
 Parameters
 
-    mode: Can be either domain or url, specifying the type of target.
-    target: The domain name or URL you want to test.
+    mode: The mode of operation. It can be either domain or url.
+        domain: Target is a domain name.
+        url: Target is a specific URL.
+    target: The target domain or URL.
 
-./security_scan.sh domain example.com
+Example
+
+bash
+
+./recon.sh domain example.com
+
+Script Workflow
+
+    Subdomain Discovery: Runs subfinder to discover subdomains.
+    DNS Resolution: Uses dnsx to resolve discovered subdomains.
+    HTTP Probing: Uses httpx to check for live web servers.
+    Port Scanning: Optionally uses naabu for port scanning.
+    Historical URLs: Optionally uses waybackurls to discover historical URLs.
+    Vulnerability Scanning: Uses nuclei to scan for vulnerabilities.
+
+Configuration
+Custom Headers
+
+The script will prompt for a custom header to use with nuclei scans, useful for bug bounty programs.
+Out-of-Scope Subdomains and URLs
+
+You can specify OOS subdomains and URLs, which the script will skip during scanning.
+Wayback URLs
+
+You can choose to use waybackurls to gather historical URLs for scanning.
+Nuclei Templates and Tags
+
+You can specify custom Nuclei templates or tags to use during the vulnerability scanning phase.
+Prompts
+
+The script will prompt you for the following information:
+
+    Program name for the custom header.
+    OOS subdomains and URLs (comma separated).
+    Whether to use naabu for port scanning.
+    Whether to store files locally.
+    Whether to use waybackurls.
+    Whether to use specific Nuclei templates or tags.
+
+Example Workflow
+
+    Run the script with domain mode:
+
+    bash
+
+./recon.sh domain example.com
+
+Enter the program name for the custom header:
+
+plaintext
+
+Enter the program name for the X-Bug-Bounty header: mybugbountyprogram
+
+Enter OOS subdomains and URLs:
+
+plaintext
+
+Enter OOS subdomains and URLs (comma separated): oos.example.com,anotheroos.example.com
+
+Choose whether to use naabu for port scanning:
+
+plaintext
+
+Do you want to use Naabu for port scanning? (yes/no): yes
+
+Choose whether to store files locally:
+
+plaintext
+
+Do you want to store files locally? (yes/no): no
+
+Choose whether to use waybackurls:
+
+plaintext
+
+Do you want to use waybackurls? (yes/no): yes
+
+Choose whether to use specific Nuclei templates or tags:
+
+plaintext
+
+Do you want to use specific Nuclei templates or tags? (yes/no): yes
+
+Enter the path(s) to Nuclei templates or tags (comma separated):
+
+plaintext
+
+    Enter the path(s) to Nuclei templates or tags (comma separated): tags,other-tags
+
+The script will then proceed to perform the recon and vulnerability scanning based on the inputs provided.
 
 
-
-Prompted Inputs
-
-    Program Name: For the X-Bug-Bounty header.
-    OOS Subdomains and URLs: Comma-separated list of out-of-scope patterns.
-    Use Naabu: Whether to use naabu for port scanning.
-    Store Files Locally: Whether to store files locally or use mktemp.
-    Use Waybackurls: Whether to use waybackurls for historical URL discovery.
-
-File Outputs
-
-    subs.txt: Discovered subdomains.
-    filtered-subs.txt: Filtered subdomains.
-    alive-subs-ip.txt: Alive subdomains with IP addresses.
-    alive-subs.txt: Alive subdomains.
-    openports.txt: Open ports found by naabu.
-    final-openports.txt: Filtered open ports.
-    web-alive.txt: Web hosts that are alive.
-    waybackurls.txt: URLs discovered by waybackurls.
-    filtered-waybackurls.txt: Filtered wayback URLs.
-    nuclei-ready.txt: URLs ready for nuclei scan.
-    nuclei-results.txt: Results from nuclei scan.
-    new-urls.txt: New URLs discovered by waybackurls.
-
-
-
-
-
-Web developers frequently update the front end of websites, but these changes often do not reflect the back end. As a result, certain endpoints may still exist on the server even though they are no longer visible on the website. If security vulnerabilities are discovered, developers sometimes simply remove the links to these endpoints rather than fixing the underlying issues. This creates a false sense of security, as the endpoints remain accessible to those who know where to look.
-
-To uncover these hidden or forgotten endpoints and expand the attack surface, security testers can use the Wayback Machine. This tool archives web pages over time, allowing testers to retrieve historical URLs that may lead to still-active endpoints. By analyzing these URLs, testers can find and exploit security flaws that are no longer visible on the current version of the website. This approach ensures a more thorough security assessment by identifying potential vulnerabilities that might otherwise be overlooked.
-
- https://security.packt.com/using-waybackurls-to-find-flaws/
-
-    
-
-
-
-
-Disclaimer
-
-Important: This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical. The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test.
-Contributing
 
 Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
 License
