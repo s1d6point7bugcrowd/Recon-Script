@@ -110,7 +110,7 @@ else
 
     # Default Nuclei command options
 
-    NUCLEI_TEMPLATES_OPTION="-ss template-spray -include-tags misc -etags aem "
+    NUCLEI_TEMPLATES_OPTION="-ss template-spray -include-tags misc -etags aem"
 
 fi
 
@@ -204,6 +204,16 @@ remove_brackets() {
 
 
 
+# Function to extract base URL
+
+extract_base_url() {
+
+    awk -F[/:] '{print $1 "://" $4}' | sort -u
+
+}
+
+
+
 # Debugging function to check file content
 
 check_file_content() {
@@ -288,13 +298,7 @@ filter_waybackurls() {
 
         elif [[ "$url" == "$TARGET"* ]]; then
 
-            # Filter by path patterns
-
-            if [[ "$url" =~ /admin|/login|/api|/dashboard ]]; then
-
-                echo "$url" | anew $output_file
-
-            fi
+            echo "$url" | anew $output_file
 
         fi
 
@@ -436,6 +440,12 @@ if [ "$MODE" == "domain" ]; then
 
 
 
+        echo -e "\033[33mExtracting base URLs...\033[0m"
+
+        cat $FILTERED_WAYBACK_URLS_FILE | extract_base_url | anew $FILTERED_WAYBACK_URLS_FILE
+
+
+
         echo -e "\033[33mRunning httpx on waybackurls...\033[0m"
 
         cat $FILTERED_WAYBACK_URLS_FILE | httpx -silent -rate-limit 5 -title -status-code -td -mc 200 | anew $NUCLEI_READY_FILE
@@ -537,6 +547,12 @@ elif [ "$MODE" == "url" ]; then
             echo -e "\033[33mFiltering waybackurls...\033[0m"
 
             filter_waybackurls $WAYBACK_URLS_FILE $FILTERED_WAYBACK_URLS_FILE
+
+
+
+            echo -e "\033[33mExtracting base URLs...\033[0m"
+
+            cat $FILTERED_WAYBACK_URLS_FILE | extract_base_url | anew $FILTERED_WAYBACK_URLS_FILE
 
 
 
