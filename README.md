@@ -4,147 +4,68 @@ Important: This script is intended for authorized security testing purposes only
 
 
 
-# Automated Recon and Vulnerability Scanning Script
+# Bug Bounty Automation Script
 
-This script automates the process of reconnaissance and vulnerability scanning on a given domain or URL. It uses various tools like `subfinder`, `dnsx`, `httpx`, `naabu`, `waybackurls`, and `nuclei` to perform these tasks.
+This script automates several common tasks in bug bounty hunting, including subdomain enumeration, DNS resolution, HTTP probing, subdomain takeover detection, and vulnerability scanning using Nuclei.
 
 ## Features
 
-- Subdomain discovery using `subfinder`
-- DNS resolution using `dnsx`
-- HTTP probing using `httpx`
-- Port scanning using `naabu` (optional)
-- Historical URL discovery using `waybackurls` (optional)
-- Vulnerability scanning using `nuclei`
-- Custom headers for bug bounty programs
-- Out-of-scope (OOS) subdomain and URL filtering
-- Blacklisted file type filtering
+- Subdomain enumeration with `subfinder`
+- DNS resolution with `dnsx`
+- HTTP probing with `httpx`
+- Subdomain takeover detection with `subzy`
+- Vulnerability scanning with `nuclei`
 
-## Prerequisites
+## Requirements
 
-Make sure you have the following tools installed and added to your PATH:
+Ensure the following tools are installed and accessible from your PATH:
 
-- subfinder
-- dnsx
-- httpx
-- naabu (optional)
-- waybackurls (optional)
-- nuclei
+- `subfinder`
+- `dnsx`
+- `httpx`
+- `subzy`
+- `nuclei`
 
 ## Usage
 
-```bash
-./recon.sh <mode> <target>
+```sh
+./bugbounty-automation-beta.sh <mode> <target>
 
 
+Modes
 
-Parameters
-
-    mode: The mode of operation. It can be either domain or url.
-        domain: Target is a domain name.
-        url: Target is a specific URL.
-    target: The target domain or URL.
-
-Example
+    domain: Target is a domain name (e.g., example.com)
+    url: Target is a specific URL (e.g., https://example.com)
 
 
+./bugbounty-automation-beta.sh domain example.com
+./bugbounty-automation-beta.sh url https://example.com
 
-./recon.sh domain example.com
 
 Script Workflow
 
-    Subdomain Discovery: Runs subfinder to discover subdomains.
-    DNS Resolution: Uses dnsx to resolve discovered subdomains.
-    HTTP Probing: Uses httpx to check for live web servers.
-    Port Scanning: Optionally uses naabu for port scanning.
-    Historical URLs: Optionally uses waybackurls to discover historical URLs.
-    Vulnerability Scanning: Uses nuclei to scan for vulnerabilities.
+    Initialization and Input Validation:
+        The script checks if sufficient arguments are passed.
+        Normalizes and trims the MODE input.
+        Prompts the user for various inputs such as program name, OOS subdomains, whether to store files locally, and specific Nuclei templates or tags.
 
-Configuration
-Custom Headers
+    Custom Header Construction:
+        Constructs a custom header using the provided program name.
 
-The script will prompt for a custom header to use with nuclei scans, useful for bug bounty programs.
-Out-of-Scope Subdomains and URLs
+    Out-of-Scope (OOS) Checking:
+        Defines a function to check if a target is out of scope based on user-provided patterns.
 
-You can specify OOS subdomains and URLs, which the script will skip during scanning.
-Wayback URLs
+    File Creation:
+        Creates necessary files based on the user's choice to store files locally or use temporary files.
 
-You can choose to use waybackurls to gather historical URLs for scanning.
-Nuclei Templates and Tags
+    Subdomain Enumeration and Takeover Detection (Domain Mode Only):
+        Runs subfinder to gather subdomains.
+        Uses dnsx for DNS resolution.
+        Uses httpx for HTTP probing.
+        Uses subzy for subdomain takeover detection.
 
-You can specify custom Nuclei templates or tags to use during the vulnerability scanning phase.
-Prompts
-
-The script will prompt you for the following information:
-
-    Program name for the custom header.
-    OOS subdomains and URLs (comma separated).
-    Whether to use naabu for port scanning.
-    Whether to store files locally.
-    Whether to use waybackurls.
-    Whether to use specific Nuclei templates or tags.
-
-Example Workflow
-
-    Run the script with domain mode:
-
-    
-
-./recon.sh domain example.com
-
-Enter the program name for the custom header:
-
-
-
-Enter the program name for the X-Bug-Bounty header: mybugbountyprogram
-
-Enter OOS subdomains and URLs:
-
-
-
-Enter OOS subdomains and URLs (comma separated): oos.example.com,anotheroos.example.com
-
-Choose whether to use naabu for port scanning:
-
-
-
-Do you want to use Naabu for port scanning? (yes/no): yes
-
-Choose whether to store files locally:
-
-
-
-Do you want to store files locally? (yes/no): no
-
-Choose whether to use waybackurls:
-
-
-
-Do you want to use waybackurls? (yes/no): yes
-
-Choose whether to use specific Nuclei templates or tags:
-
-
-
-Do you want to use specific Nuclei templates or tags? (yes/no): yes
-
-Enter the path(s) to Nuclei templates or tags (comma separated):
-
-
-
-    Enter the path(s) to Nuclei templates or tags (comma separated): tags,other-tags
-
-The script will then proceed to perform the recon and vulnerability scanning based on the inputs provided.
-
-
-In essence, Waybackurls offers a valuable asset for recon by:
-
-    Revealing historical URLs that might no longer be accessible through standard browsing.
-    Exposing potential vulnerabilities present in past versions of the website that could still be exploitable.
-
-By incorporating Waybackurls into your recon workflow, you can gain a more comprehensive understanding of the target's attack surface and identify security weaknesses that might otherwise be overlooked.
-
-
+    Vulnerability Scanning:
+        Runs nuclei on the final set of URLs with user-defined or default templates and options.
 
 Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
 License
