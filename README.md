@@ -6,66 +6,53 @@ Important: This script is intended for authorized security testing purposes only
 
 # Bug Bounty Automation Script
 
-This script automates several common tasks in bug bounty hunting, including subdomain enumeration, DNS resolution, HTTP probing, subdomain takeover detection, and vulnerability scanning using Nuclei.
+This script automates the process of identifying vulnerabilities in web applications using a variety of tools such as `subfinder`, `dnsx`, `httpx`, `waybackurls`, `nuclei`, and optionally `naabu`.
 
 ## Features
 
-- Subdomain enumeration with `subfinder`
-- DNS resolution with `dnsx`
-- HTTP probing with `httpx`
-- Subdomain takeover detection with `subzy`
-- Vulnerability scanning with `nuclei`
+- **Subdomain Enumeration**: Uses `subfinder` to find subdomains.
+- **DNS Resolution**: Resolves subdomains to IP addresses using `dnsx`.
+- **HTTP Probing**: Identifies live web servers using `httpx`.
+- **Historical URL Discovery**: Optionally uses `waybackurls` to find historical URLs.
+- **Vulnerability Scanning**: Uses `nuclei` to scan for vulnerabilities.
+- **Port Scanning**: Optionally uses `naabu` for port scanning.
+- **OOS Filtering**: Filters out-of-scope URLs and subdomains based on user input.
 
 ## Requirements
-
-Ensure the following tools are installed and accessible from your PATH:
 
 - `subfinder`
 - `dnsx`
 - `httpx`
-- `subzy`
+- `waybackurls`
 - `nuclei`
+- `naabu` (optional)
 
 ## Usage
 
-```sh
-./bugbounty-automation-beta.sh <mode> <target>
+Clone the repository and navigate to the script directory:
+
+```bash
+git clone https://github.com/yourusername/bug-bounty-automation.git
+cd bug-bounty-automation
+chmod +x bugbounty-automation-beta.sh
 
 
 Modes
 
-    domain: Target is a domain name (e.g., example.com)
-    url: Target is a specific URL (e.g., https://example.com)
+    domain: The target is a domain name.
+    url: The target is a specific URL.
 
+Options
 
-./bugbounty-automation-beta.sh domain example.com
-./bugbounty-automation-beta.sh url https://example.com
+During execution, the script will prompt for the following inputs:
 
+    Program name for the X-Bug-Bounty header: A custom header to identify your traffic.
+    OOS subdomains and URLs: Comma-separated list of out-of-scope subdomains and URLs.
+    Use Naabu for port scanning: (yes/no) Whether to use naabu for port scanning.
+    Store files locally: (yes/no) Whether to save files locally.
+    Use waybackurls: (yes/no) Whether to use waybackurls for historical URL discovery.
+    Use specific Nuclei templates or tags: (yes/no) Whether to use specific Nuclei templates or tags.
 
-Script Workflow
-
-    Initialization and Input Validation:
-        The script checks if sufficient arguments are passed.
-        Normalizes and trims the MODE input.
-        Prompts the user for various inputs such as program name, OOS subdomains, whether to store files locally, and specific Nuclei templates or tags.
-
-    Custom Header Construction:
-        Constructs a custom header using the provided program name.
-
-    Out-of-Scope (OOS) Checking:
-        Defines a function to check if a target is out of scope based on user-provided patterns.
-
-    File Creation:
-        Creates necessary files based on the user's choice to store files locally or use temporary files.
-
-    Subdomain Enumeration and Takeover Detection (Domain Mode Only):
-        Runs subfinder to gather subdomains.
-        Uses dnsx for DNS resolution.
-        Uses httpx for HTTP probing.
-        Uses subzy for subdomain takeover detection.
-
-    Vulnerability Scanning:
-        Runs nuclei on the final set of URLs with user-defined or default templates and options.
 
 Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
 License
