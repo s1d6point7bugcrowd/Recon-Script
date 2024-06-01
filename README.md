@@ -4,54 +4,59 @@ Important: This script is intended for authorized security testing purposes only
 
 
 
-# Bug Bounty Automation Script
+# Web Application Security Automation Script
 
-This script automates the process of identifying vulnerabilities in web applications using a variety of tools such as `subfinder`, `dnsx`, `httpx`, `waybackurls`, `nuclei`, and optionally `naabu`.
+This script automates the process of discovering, enumerating, and testing web application targets. It allows the user to specify a target domain or a single URL, and filter out out-of-scope (OOS) URLs and subdomains. The script uses various tools to identify alive subdomains, probe for HTTP endpoints, crawl for additional URLs, and test for vulnerabilities using Nuclei.
 
-## Features
+## Prerequisites
 
-- **Subdomain Enumeration**: Uses `subfinder` to find subdomains.
-- **DNS Resolution**: Resolves subdomains to IP addresses using `dnsx`.
-- **HTTP Probing**: Identifies live web servers using `httpx`.
-- **Historical URL Discovery**: Optionally uses `waybackurls` to find historical URLs.
-- **Vulnerability Scanning**: Uses `nuclei` to scan for vulnerabilities.
-- **Port Scanning**: Optionally uses `naabu` for port scanning.
-- **OOS Filtering**: Filters out-of-scope URLs and subdomains based on user input.
-
-## Requirements
+Before running the script, ensure that the following tools are installed and available in your PATH:
 
 - `subfinder`
 - `dnsx`
 - `httpx`
-- `waybackurls`
+- `gospider`
+- `unfurl`
+- `gau`
 - `nuclei`
-- `naabu` (optional)
+- `anew`
 
 ## Usage
 
-Clone the repository and navigate to the script directory:
+1. Clone this repository or download the script to your local machine.
+2. Make the script executable:
 
-```bash
-git clone https://github.com/yourusername/bug-bounty-automation.git
-cd bug-bounty-automation
-chmod +x bugbounty-automation-beta.sh
+    ```bash
+    chmod +x security-automation.sh
+    ```
 
+3. Run the script:
 
-Modes
+    ```bash
+    ./security-automation.sh
+    ```
 
-    domain: The target is a domain name.
-    url: The target is a specific URL.
+4. Follow the prompts to enter the target domain or URL, and out-of-scope URLs and subdomains.
 
-Options
+## Script Workflow
 
-During execution, the script will prompt for the following inputs:
+1. **Target Input**: The script prompts the user to enter a target domain or URL.
+2. **OOS Input**: The script prompts the user to enter out-of-scope URLs and subdomains as a comma-separated list.
+3. **Subdomain Enumeration**: Using `subfinder` and `dnsx`, the script discovers and validates subdomains.
+4. **HTTP Probing**: The script uses `httpx` to identify HTTP endpoints and checks their status codes.
+5. **Web Crawling**: The script uses `gospider` to crawl discovered endpoints and extract additional URLs.
+6. **URL Formatting**: Using `unfurl`, the script formats URLs to a consistent scheme.
+7. **Additional URL Discovery**: The script uses `gau` to gather URLs from various sources.
+8. **OOS Filtering**: The script filters out the out-of-scope URLs and subdomains.
+9. **Vulnerability Scanning**: The script runs Nuclei against the filtered URLs to identify potential vulnerabilities.
 
-    Program name for the X-Bug-Bounty header: A custom header to identify your traffic.
-    OOS subdomains and URLs: Comma-separated list of out-of-scope subdomains and URLs.
-    Use Naabu for port scanning: (yes/no) Whether to use naabu for port scanning.
-    Store files locally: (yes/no) Whether to save files locally.
-    Use waybackurls: (yes/no) Whether to use waybackurls for historical URL discovery.
-    Use specific Nuclei templates or tags: (yes/no) Whether to use specific Nuclei templates or tags.
+## Example
+
+```plaintext
+$ ./security-automation.sh
+Enter the target domain or URL (e.g., example.com or https://example.com): example.com
+Enter out-of-scope URLs and subdomains (comma-separated): oos.example.com,oos2.example.com
+
 
 
 Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
@@ -60,5 +65,5 @@ License
 Distributed under the MIT License. See LICENSE for more information.
 Acknowledgments
 
-    Thanks to the developers of the integrated tools.
-    Special thanks to ProjectDiscovery for their open-source tools used in this script.
+Thanks to the developers of the integrated tools.
+Special thanks to ProjectDiscovery for their open-source tools used in this script.
