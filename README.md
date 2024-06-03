@@ -50,12 +50,7 @@ Before running the script, ensure that the following tools are installed and ava
 8. **OOS Filtering**: The script filters out the out-of-scope URLs and subdomains.
 9. **Vulnerability Scanning**: The script runs Nuclei against the filtered URLs to identify potential vulnerabilities.
 
-## Example
 
-```plaintext
-$ ./security-automation.sh
-Enter the target domain or URL (e.g., example.com or https://example.com): example.com
-Enter out-of-scope URLs and subdomains (comma-separated): oos.example.com,oos2.example.com
 
 
 
