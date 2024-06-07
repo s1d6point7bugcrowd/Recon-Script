@@ -46,10 +46,6 @@ fi
 
 
 
-echo "Debug: OOS_PATTERNS='$OOS_PATTERNS'"
-
-
-
 echo "Enter the bug bounty program name:"
 
 read PROGRAM_NAME
@@ -114,7 +110,7 @@ elif [[ $SCAN_TYPE -eq 2 ]]; then
 
             echo "URL is active and in scope, proceeding with nuclei scan..."
 
-            echo $url_active | nuclei -rl 5  -ss template-spray -H "$CUSTOM_HEADER" | tee "${DATA_DIR}/${URL//[:\/]/_}-nuclei-output.txt"
+            echo $url_active | nuclei -rl 5 -ss template-spray -H "$CUSTOM_HEADER" | tee "${DATA_DIR}/${URL//[:\/]/_}-nuclei-output.txt"
 
         else
 
