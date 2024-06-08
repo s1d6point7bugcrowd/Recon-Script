@@ -15,9 +15,7 @@ Before running the script, ensure that the following tools are installed and ava
 - `subfinder`
 - `dnsx`
 - `httpx`
-- `gospider`
 - `unfurl`
-- `gau`
 - `nuclei`
 - `anew`
 
