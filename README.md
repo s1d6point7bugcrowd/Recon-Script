@@ -41,12 +41,10 @@ Before running the script, ensure that the following tools are installed and ava
 1. **Target Input**: The script prompts the user to enter a target domain or URL.
 2. **OOS Input**: The script prompts the user to enter out-of-scope URLs and subdomains as a comma-separated list.
 3. **Subdomain Enumeration**: Using `subfinder` and `dnsx`, the script discovers and validates subdomains.
-4. **HTTP Probing**: The script uses `httpx` to identify HTTP endpoints and checks their status codes.
-5. **Web Crawling**: The script uses `gospider` to crawl discovered endpoints and extract additional URLs.
-6. **URL Formatting**: Using `unfurl`, the script formats URLs to a consistent scheme.
-7. **Additional URL Discovery**: The script uses `gau` to gather URLs from various sources.
-8. **OOS Filtering**: The script filters out the out-of-scope URLs and subdomains.
-9. **Vulnerability Scanning**: The script runs Nuclei against the filtered URLs to identify potential vulnerabilities.
+4. **HTTP Probing**: The script uses `httpx` to identify HTTP endpoints and checks their status codes. 
+5. **URL Formatting**: Using `unfurl`, the script formats URLs to a consistent scheme.
+6. **OOS Filtering**: The script filters out the out-of-scope URLs and subdomains.
+7. **Vulnerability Scanning**: The script runs Nuclei against the filtered URLs to identify potential vulnerabilities.
 
 
 
