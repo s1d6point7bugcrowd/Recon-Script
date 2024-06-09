@@ -18,9 +18,10 @@ Before running the script, ensure that the following tools are installed and ava
 - `unfurl`
 - `nuclei`
 - `anew`
-    Each line is checked for the presence of "medium", "high", or "critical" keywords, and the appropriate announcement is made using espeak.
 
-Ensure you have installed espeak as previously mentioned, and then run this script. This will provide real-time voice announcements for detected vulnerabilities as the scan progresses.
+   Each line is checked for the presence of "medium", "high", or "critical" keywords, and the appropriate announcement is made using espeak.
+
+Ensure you have installed espeak, and then run this script. This will provide real-time voice announcements for detected vulnerabilities as the scan progresses.
 
 ## Usage
 
