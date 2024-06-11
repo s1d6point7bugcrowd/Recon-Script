@@ -11,8 +11,15 @@ function announce_message() {
     espeak -s $SPEECH_RATE -v $VOICE "$message"
 }
 
+# Display banner with lolcat
+echo "coded by: s1d6p01nt7" | lolcat
+
 # Welcome message
 announce_message "This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical. The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test."
+
+# Pause for a few seconds to allow the banner to be seen, then clear the screen
+sleep 3
+clear
 
 announce_message "Do you want to store the data permanently? Say yes or no."
 echo -e "${ORANGE}Do you want to store the data permanently? (y/n)${NC}"
