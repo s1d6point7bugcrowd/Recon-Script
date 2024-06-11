@@ -15,7 +15,7 @@ function announce_message() {
 echo "coded by: s1d6p01nt7" | lolcat
 
 # Welcome message
-announce_message "This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical. The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test."
+announce_message "This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script."
 
 # Pause for a few seconds to allow the banner to be seen, then clear the screen
 sleep 3
