@@ -3,19 +3,24 @@
 ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
 
-SPEECH_RATE=150
+SPEECH_RATE=160
 VOICE="en+f3" # English female voice
 
 function announce_message() {
     local message=$1
-    espeak -s $SPEECH_RATE -v $VOICE "$message"
+    if [ "$ENABLE_VOICE" == "y" ]; then
+        espeak -s $SPEECH_RATE -v $VOICE "$message"
+    fi
 }
 
 # Display banner with lolcat
 echo "coded by: s1d6p01nt7" | lolcat
 
+echo -e "${ORANGE}Do you want to enable voice announcements? (y/n)${NC}"
+read ENABLE_VOICE
+
 # Welcome message
-announce_message "This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script."
+announce_message "Victorious warriors win first and then go to war, while defeated warriors go to war first and then seek to win. Sun Tzu"
 
 # Pause for a few seconds to allow the banner to be seen, then clear the screen
 sleep 3
@@ -37,7 +42,7 @@ announce_message "Do you want to scan a domain or a single URL? Say one for doma
 echo -e "${ORANGE}Do you want to scan a domain (1) or a single URL (2)?${NC}"
 read SCAN_TYPE
 
-announce_message "Enter comma-separated out-of-scope patterns. For example, star dot example dot com, example dot example dot com."
+announce_message "Enter comma-separated out-of-scope patterns."
 echo -e "${ORANGE}Enter comma-separated out-of-scope patterns (e.g., *.example.com, example.example.com):${NC}"
 read OOS_INPUT
 if [ -z "$OOS_INPUT" ]; then
@@ -56,7 +61,7 @@ CUSTOM_HEADER="X-Bug-Bounty: researcher@$PROGRAM_NAME"
 function announce_vulnerability() {
     local severity=$1
     echo -e "${ORANGE}Announcing: $severity severity vulnerability detected${NC}"
-    espeak -s $SPEECH_RATE -v $VOICE "$severity severity vulnerability detected"
+    announce_message "$severity severity vulnerability detected"
 }
 
 # Check if espeak is installed
@@ -97,7 +102,7 @@ if [[ $SCAN_TYPE -eq 1 ]]; then
     announce_message "Running httpx on alive subdomains..."
     echo -e "${ORANGE}Running httpx on alive subdomains...${NC}"
     httpx_output="${DATA_DIR}/${TARGET}-httpx-results.txt"
-    httpx -silent -title -rate-limit 5 -td -mc 200 -status-code -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" < ${DATA_DIR}/${TARGET}-final-alive-subs.txt | tee ${httpx_output}
+    httpx -silent -title -rate-limit 5 -td -status-code -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" < ${DATA_DIR}/${TARGET}-final-alive-subs.txt | tee ${httpx_output}
 
     echo -e "${ORANGE}httpx results:${NC}"
     cat ${httpx_output}
@@ -126,7 +131,7 @@ elif [[ $SCAN_TYPE -eq 2 ]]; then
 
     announce_message "Running httpx on target URL..."
     # Direct steps for a single URL, using verbose output for httpx
-    httpx_output=$(echo $URL | httpx -silent -mc 200 -title -rate-limit 5 -status-code -td -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36")
+    httpx_output=$(echo $URL | httpx -silent -title -rate-limit 5 -status-code -td -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36")
     echo -e "${ORANGE}$httpx_output${NC}" | tee "${DATA_DIR}/${URL//[:\/]/_}-web-alive.txt"
 
     if ! echo "$httpx_output" | grep -qE "$OOS_PATTERNS"; then
