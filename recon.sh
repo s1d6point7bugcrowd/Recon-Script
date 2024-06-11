@@ -3,7 +3,7 @@
 ORANGE='\033[0;33m'
 NC='\033[0m' # No Color
 
-SPEECH_RATE=130
+SPEECH_RATE=150
 VOICE="en+f3" # English female voice
 
 function announce_message() {
