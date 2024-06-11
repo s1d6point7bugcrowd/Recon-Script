@@ -14,6 +14,7 @@ function announce_message() {
 # Welcome message
 announce_message "This tool will help you test domains or URLs for vulnerabilities and announce the findings in real time."
 
+announce_message "Do you want to store the data permanently? Say yes or no."
 echo -e "${ORANGE}Do you want to store the data permanently? (y/n)${NC}"
 read STORE_PERMANENTLY
 
@@ -25,9 +26,11 @@ else
     mkdir -p $DATA_DIR
 fi
 
+announce_message "Do you want to scan a domain or a single URL? Say one for domain or two for URL."
 echo -e "${ORANGE}Do you want to scan a domain (1) or a single URL (2)?${NC}"
 read SCAN_TYPE
 
+announce_message "Enter comma-separated out-of-scope patterns. For example, star dot example dot com, example dot example dot com."
 echo -e "${ORANGE}Enter comma-separated out-of-scope patterns (e.g., *.example.com, example.example.com):${NC}"
 read OOS_INPUT
 if [ -z "$OOS_INPUT" ]; then
@@ -38,6 +41,7 @@ fi
 
 echo -e "${ORANGE}Debug: OOS_PATTERNS='$OOS_PATTERNS'${NC}"
 
+announce_message "Enter the bug bounty program name."
 echo -e "${ORANGE}Enter the bug bounty program name:${NC}"
 read PROGRAM_NAME
 CUSTOM_HEADER="X-Bug-Bounty: researcher@$PROGRAM_NAME"
@@ -55,6 +59,7 @@ if ! command -v espeak &> /dev/null; then
 fi
 
 if [[ $SCAN_TYPE -eq 1 ]]; then
+    announce_message "Enter the target domain."
     echo -e "${ORANGE}Enter the target domain:${NC}"
     read TARGET
 
@@ -101,6 +106,7 @@ if [[ $SCAN_TYPE -eq 1 ]]; then
     done
 
 elif [[ $SCAN_TYPE -eq 2 ]]; then
+    announce_message "Enter the target URL."
     echo -e "${ORANGE}Enter the target URL:${NC}"
     read URL
 
@@ -130,8 +136,10 @@ elif [[ $SCAN_TYPE -eq 2 ]]; then
     fi
 
 else
+    announce_message "Invalid option selected."
     echo -e "${ORANGE}Invalid option selected.${NC}"
     exit 1
 fi
 
+announce_message "Nuclei scan completed."
 echo -e "${ORANGE}Nuclei scan completed.${NC}"
