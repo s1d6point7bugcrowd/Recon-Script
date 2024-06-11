@@ -12,7 +12,7 @@ function announce_message() {
 }
 
 # Welcome message
-announce_message "This tool will help you test domains or URLs for vulnerabilities and announce the findings in real time."
+announce_message "This script is intended for authorized security testing purposes only. Ensure you have explicit permission to test any target before using this script. Unauthorized testing can be illegal and unethical. The authors of this script are not responsible for any misuse or damage caused by the use of this script. Use it responsibly and only on targets you have permission to test."
 
 announce_message "Do you want to store the data permanently? Say yes or no."
 echo -e "${ORANGE}Do you want to store the data permanently? (y/n)${NC}"
