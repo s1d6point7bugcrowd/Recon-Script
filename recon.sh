@@ -226,7 +226,7 @@ if [[ $SCAN_TYPE -eq 1 ]]; then
 
     echo -e "${ORANGE}Running nuclei on extracted URLs...${NC}"
 
-    cat ${DATA_DIR}/${TARGET}-httpx-urls.txt | nuclei -rl 5 -retries 10 -ss template-spray -H "$CUSTOM_HEADER" | tee ${DATA_DIR}/${TARGET}-nuclei-output.txt | while read -r line; do
+    cat ${DATA_DIR}/${TARGET}-httpx-urls.txt | nuclei -rl 5 -ss template-spray -H "$CUSTOM_HEADER" | tee ${DATA_DIR}/${TARGET}-nuclei-output.txt | while read -r line; do
 
         echo "$line"
 
@@ -278,7 +278,7 @@ elif [[ $SCAN_TYPE -eq 2 ]]; then
 
             echo -e "${ORANGE}URL is active and in scope, proceeding with nuclei scan...${NC}"
 
-            echo $url_active | nuclei -rl 5 -retries 10 -ss template-spray -H "$CUSTOM_HEADER" | tee "${DATA_DIR}/${URL//[:\/]/_}-nuclei-output.txt" | while read -r line; do
+            echo $url_active | nuclei -rl 5 -ss template-spray -H "$CUSTOM_HEADER" | tee "${DATA_DIR}/${URL//[:\/]/_}-nuclei-output.txt" | while read -r line; do
 
                 echo "$line"
 
