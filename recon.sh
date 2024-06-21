@@ -8,7 +8,7 @@ NC='\033[0m' # No Color
 
 
 
-SPEECH_RATE=150
+SPEECH_RATE=140
 
 VOICE="en+f3" # English female voice
 
