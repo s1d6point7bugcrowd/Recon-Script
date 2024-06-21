@@ -42,7 +42,7 @@ read ENABLE_VOICE
 
 # Welcome message
 
-announce_message "Level Up."
+announce_message "Lay back and play "Call of Duty" while I do all the work."
 
 
 
