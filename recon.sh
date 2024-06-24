@@ -86,6 +86,18 @@ read SCAN_TYPE
 
 
 
+# Validate SCAN_TYPE input
+
+if [[ "$SCAN_TYPE" != "1" && "$SCAN_TYPE" != "2" ]]; then
+
+    echo -e "${ORANGE}Invalid option selected.${NC}"
+
+    exit 1
+
+fi
+
+
+
 announce_message "Enter comma-separated out-of-scope patterns."
 
 echo -e "${ORANGE}Enter comma-separated out-of-scope patterns (e.g., *.example.com, example.example.com):${NC}"
@@ -142,7 +154,7 @@ fi
 
 
 
-if [[ $SCAN_TYPE -eq 1 ]]; then
+if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Enter the target domain."
 
@@ -188,45 +200,37 @@ if [[ $SCAN_TYPE -eq 1 ]]; then
 
 
 
-    announce_message "Filtering out-of-scope patterns from dnsx results..."
-
-    # Filter out OOS subdomains again after dnsx
-
-    grep -Ev "$OOS_PATTERNS" ${DATA_DIR}/${TARGET}-alive-subs.txt | anew ${DATA_DIR}/${TARGET}-final-alive-subs.txt
-
-    echo -e "${ORANGE}Filtered alive subdomains (after applying OOS patterns):${NC}"
-
-    cat ${DATA_DIR}/${TARGET}-final-alive-subs.txt
-
-
-
     announce_message "Running httpx on alive subdomains..."
 
     echo -e "${ORANGE}Running httpx on alive subdomains...${NC}"
 
-    httpx_output=$(httpx -silent -title -rate-limit 5 -td -status-code -mc 200,201,202,203,204,206,301,302,303,307,308 -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" < ${DATA_DIR}/${TARGET}-final-alive-subs.txt)
+    httpx_output=$(httpx -silent -title -rate-limit 5 -td -status-code -mc 200,201,202,203,204,206,301,302,303,307,308 -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" < ${DATA_DIR}/${TARGET}-alive-subs.txt)
 
 
 
     echo -e "${ORANGE}httpx results:${NC}"
 
-    echo "$httpx_output"
+    echo "$httpx_output" | tee ${DATA_DIR}/${TARGET}-httpx-results.txt
 
 
 
-    announce_message "Extracting URLs from httpx results..."
+    announce_message "Filtering out-of-scope patterns from httpx results..."
 
-    echo -e "${ORANGE}Extracting URLs from httpx results...${NC}"
+    echo -e "${ORANGE}Filtering OOS patterns from httpx results...${NC}"
 
-    echo "$httpx_output" | grep -oP 'http[^\s]+' | grep -Ev "$OOS_PATTERNS" | anew ${DATA_DIR}/${TARGET}-httpx-urls.txt
+    echo "$httpx_output" | grep -oP 'http[^\s]+' | grep -Ev "$OOS_PATTERNS" | anew ${DATA_DIR}/${TARGET}-final-httpx-urls.txt
+
+    echo -e "${ORANGE}Filtered URLs:${NC}"
+
+    cat ${DATA_DIR}/${TARGET}-final-httpx-urls.txt
 
 
 
-    announce_message "Running nuclei on extracted URLs..."
+    announce_message "Running nuclei on filtered URLs..."
 
-    echo -e "${ORANGE}Running nuclei on extracted URLs...${NC}"
+    echo -e "${ORANGE}Running nuclei on filtered URLs...${NC}"
 
-    cat ${DATA_DIR}/${TARGET}-httpx-urls.txt | nuclei -rl 5 -retries 10 -ss template-spray -H "$CUSTOM_HEADER" | tee ${DATA_DIR}/${TARGET}-nuclei-output.txt | while read -r line; do
+    cat ${DATA_DIR}/${TARGET}-final-httpx-urls.txt | nuclei -rl 5 -retries 10 -ss template-spray -H "$CUSTOM_HEADER" | tee ${DATA_DIR}/${TARGET}-nuclei-output.txt | while read -r line; do
 
         echo "$line"
 
@@ -248,7 +252,7 @@ if [[ $SCAN_TYPE -eq 1 ]]; then
 
 
 
-elif [[ $SCAN_TYPE -eq 2 ]]; then
+elif [[ "$SCAN_TYPE" -eq 2 ]]; then
 
     announce_message "Enter the target URL."
 
