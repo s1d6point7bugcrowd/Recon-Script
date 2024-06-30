@@ -20,7 +20,7 @@ echo -e "${ORANGE}Do you want to enable voice announcements? (y/n)${NC}"
 read ENABLE_VOICE
 
 # Welcome message
-announce_message "Voice activated."
+announce_message "Voive features activated."
 
 # Pause for a few seconds to allow the banner to be seen, then clear the screen
 sleep 2
@@ -51,13 +51,9 @@ fi
 announce_message "Enter comma-separated out-of-scope patterns."
 echo -e "${ORANGE}Enter comma-separated out-of-scope patterns (e.g., *.example.com, example.example.com):${NC}"
 read OOS_INPUT
-if [ -z "$OOS_INPUT" ]; then
-    OOS_PATTERNS="^$" # Empty pattern that matches nothing
-else
-    OOS_PATTERNS=$(echo $OOS_INPUT | sed 's/[.[\*^$(){}|+?]/\\&/g' | sed 's/,/\\|/g') # Convert to regex OR format and escape special characters
-fi
+OOS_PATTERNS=(${OOS_INPUT//,/ })
 
-echo -e "${ORANGE}Debug: OOS_PATTERNS='$OOS_PATTERNS'${NC}"
+echo -e "${ORANGE}Debug: OOS_PATTERNS='${OOS_PATTERNS[*]}'${NC}"
 
 announce_message "Enter the bug bounty program name."
 echo -e "${ORANGE}Enter the bug bounty program name:${NC}"
@@ -83,7 +79,7 @@ fi
 
 function run_nuclei() {
     local target_file=$1
-    local nuclei_cmd="nuclei -rl 5 -ss template-spray -H \"$CUSTOM_HEADER\""
+    local nuclei_cmd="nuclei -rl 5 -retries 10 -ss template-spray -H \"$CUSTOM_HEADER\""
 
     for template_path in "${TEMPLATE_PATHS_ARRAY[@]}"; do
         nuclei_cmd+=" -t $template_path"
@@ -102,6 +98,24 @@ function run_nuclei() {
     done
 }
 
+function filter_oos() {
+    local input_file=$1
+    local output_file=$2
+    while read -r line; do
+        local in_scope=true
+        for oos in "${OOS_PATTERNS[@]}"; do
+            if [[ "$line" == *"$oos"* ]]; then
+                in_scope=false
+                echo -e "${ORANGE}OOS: $line${NC}"
+                break
+            fi
+        done
+        if $in_scope; then
+            echo "$line" >> "$output_file"
+        fi
+    done < "$input_file"
+}
+
 if [[ "$SCAN_TYPE" -eq 1 ]]; then
     announce_message "Enter the target domain."
     echo -e "${ORANGE}Enter the target domain:${NC}"
@@ -113,7 +127,7 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Filtering out-of-scope patterns from subfinder results..."
     echo -e "${ORANGE}Subfinder completed. Filtering OOS patterns...${NC}"
-    grep -Ev "$OOS_PATTERNS" ${DATA_DIR}/${TARGET}-subs.txt | anew ${DATA_DIR}/${TARGET}-filtered-subs.txt
+    filter_oos "${DATA_DIR}/${TARGET}-subs.txt" "${DATA_DIR}/${TARGET}-filtered-subs.txt"
     echo -e "${ORANGE}Filtered subdomains:${NC}"
     cat ${DATA_DIR}/${TARGET}-filtered-subs.txt
 
@@ -134,7 +148,7 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Filtering out-of-scope patterns from httpx results..."
     echo -e "${ORANGE}Filtering OOS patterns from httpx results...${NC}"
-    echo "$httpx_output" | grep -oP 'http[^\s]+' | grep -Ev "$OOS_PATTERNS" | anew ${DATA_DIR}/${TARGET}-final-httpx-urls.txt
+    echo "$httpx_output" | grep -oP 'http[^\s]+' | filter_oos /dev/stdin "${DATA_DIR}/${TARGET}-final-httpx-urls.txt"
     echo -e "${ORANGE}Filtered URLs:${NC}"
     cat ${DATA_DIR}/${TARGET}-final-httpx-urls.txt
 
