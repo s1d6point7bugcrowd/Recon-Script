@@ -20,7 +20,7 @@ echo -e "${ORANGE}Do you want to enable voice announcements? (y/n)${NC}"
 read ENABLE_VOICE
 
 # Welcome message
-announce_message "Voive features activated."
+announce_message "Level up."
 
 # Pause for a few seconds to allow the banner to be seen, then clear the screen
 sleep 2
@@ -101,6 +101,7 @@ function run_nuclei() {
 function filter_oos() {
     local input_file=$1
     local output_file=$2
+    > "$output_file"
     while read -r line; do
         local in_scope=true
         for oos in "${OOS_PATTERNS[@]}"; do
