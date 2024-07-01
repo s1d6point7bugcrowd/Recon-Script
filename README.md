@@ -6,64 +6,107 @@ Important: This script is intended for authorized security testing purposes only
 
 # Web Application Security Automation Script
 
-This script automates the process of discovering, enumerating, and testing web application targets. It allows the user to specify a target domain or a single URL, and filter out out-of-scope (OOS) URLs and subdomains. The script uses various tools to identify alive subdomains, probe for HTTP endpoints, crawl for additional URLs, and test for vulnerabilities using Nuclei.
+
+This script is designed to automate the process of scanning domains and URLs for vulnerabilities using `subfinder`, `dnsx`, `httpx`, and `nuclei`. It includes options for enabling voice announcements, storing data, filtering out-of-scope patterns, and specifying custom Nuclei templates.
 
 ## Prerequisites
 
-Before running the script, ensure that the following tools are installed and available in your PATH:
+https://github.com/trickest/resolvers
 
+
+Ensure the following tools are installed and available in your `PATH`:
+- `espeak`
+- `lolcat`
 - `subfinder`
 - `dnsx`
 - `httpx`
-- `unfurl`
 - `nuclei`
 - `anew`
 
-
-Each line is checked for the presence of "medium", "high", or "critical" keywords, and the appropriate announcement is made using espeak.
-
-Ensure you have installed espeak, and then run this script. This will provide real-time voice announcements for detected vulnerabilities as the scan progresses.
-
 ## Usage
 
-1. Clone this repository or download the script to your local machine.
-2. Make the script executable:
-
-    ```bash
-    chmod +x security-automation.sh
-    ```
-
-3. Run the script:
-
-    ```bash
-    ./security-automation.sh
-    ```
-
-4. Follow the prompts to enter the target domain or URL, and out-of-scope URLs and subdomains.
+1. Clone or download this repository to your local machine.
+2. Make the script executable: `chmod +x scan_script.sh`
+3. Run the script: `./scan_script.sh`
 
 ## Script Workflow
 
-1. **Target Input**: The script prompts the user to enter a target domain or URL.
-2. **OOS Input**: The script prompts the user to enter out-of-scope URLs and subdomains as a comma-separated list.
-3. **Subdomain Enumeration**: Using `subfinder` and `dnsx`, the script discovers and validates subdomains.
-4. **HTTP Probing**: The script uses `httpx` to identify HTTP endpoints and checks their status codes. 
-5. **URL Formatting**: Using `unfurl`, the script formats URLs to a consistent scheme.
-6. **OOS Filtering**: The script filters out the out-of-scope URLs and subdomains.
-7. **Vulnerability Scanning**: The script runs Nuclei against the filtered URLs to identify potential vulnerabilities.
+### Voice Announcements
+- **Prompt**: Enable voice announcements (`y/n`)
+- If enabled, the script uses `espeak` for voice notifications.
 
+### Data Storage
+- **Prompt**: Store data permanently (`y/n`)
+- If "no", data is stored in `/tmp`.
+- If "yes", data is stored in `./data`.
 
+### Scan Type
+- **Prompt**: Scan a domain (1) or a single URL (2)
+- Based on selection, the script proceeds with domain or URL scanning.
 
+### Out-of-Scope Patterns
+- **Prompt**: Enter comma-separated out-of-scope patterns (e.g., `*.example.com, example.example.com`)
+- The script uses these patterns to filter results.
 
+### Bug Bounty Program
+- **Prompt**: Enter the bug bounty program name
+- A custom header `X-Bug-Bounty` with the entered program name is used in HTTP requests.
 
+### Nuclei Templates
+- **Prompt**: Enter the Nuclei template paths (comma-separated)
+- The script uses the specified templates for scanning.
 
+## Domain Scan Workflow
 
+1. **Subdomain Discovery**: Uses `subfinder` to discover subdomains.
+2. **Out-of-Scope Filtering**: Filters subdomains based on out-of-scope patterns.
+3. **DNS Resolution**: Uses `dnsx` to resolve and expand subdomain results.
+4. **HTTP Probe**: Uses `httpx` to probe subdomains for HTTP services.
+5. **Nuclei Scan**: Runs `nuclei` on the filtered and resolved subdomains.
 
+## URL Scan Workflow
 
-Contributions are welcome! Please read the contributing guidelines before submitting pull requests.
-License
+1. **HTTP Probe**: Uses `httpx` to probe the specified URL.
+2. **Out-of-Scope Check**: Ensures the URL is in scope.
+3. **Nuclei Scan**: Runs `nuclei` on the active and in-scope URL.
 
-Distributed under the MIT License. See LICENSE for more information.
-Acknowledgments
+## Functions
+
+### `announce_message`
+Announces messages using `espeak` if voice announcements are enabled.
+
+### `announce_vulnerability`
+Announces the detection of vulnerabilities based on severity.
+
+### `filter_oos`
+Filters lines based on out-of-scope patterns.
+
+### `find_new_subdomains`
+Finds new subdomains discovered by `dnsx` and not present in the original subdomain list.
+
+### `run_nuclei`
+Runs `nuclei` on a list of targets with specified templates and custom headers.
+
+## Example Commands
+
+- `subfinder -d example.com -silent -all`
+- `dnsx -resp -silent -r /path/to/resolvers.txt`
+- `httpx -silent -title -rl 5 -status-code -td -mc 200,201,202,203,204,206,301,302,303,307,308 -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"`
+- `nuclei -rl 5 -ss template-spray -H "X-Bug-Bounty: s1d6p01nt7@program_name" -t /path/to/template.yaml`
+
+## Notes
+
+- Customize the script as per your requirements, especially the paths to tools and resolvers.
+- Ensure appropriate permissions and scopes are in place for bug bounty programs.
+- The script includes debug messages to assist in troubleshooting.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+---
+
+Coded by: s1d6p01nt7
 
 Thanks to the developers of the integrated tools.
 Special thanks to ProjectDiscovery for their open-source tools used in this script.
