@@ -44,8 +44,8 @@ else
 fi
 
 # Prompt to scan a domain or a single URL
-announce_message "Do you want to scan a domain or a single URL? Enter one for domain or two for URL."
-echo -e "${ORANGE}Do you want to scan a domain (1) or a single URL (2)?${NC}"
+announce_message "Do you want to test a domain or a single URL? Enter one for domain or two for URL."
+echo -e "${ORANGE}Do you want to test a domain (1) or a single URL (2)?${NC}"
 read SCAN_TYPE
 
 # Validate SCAN_TYPE input
