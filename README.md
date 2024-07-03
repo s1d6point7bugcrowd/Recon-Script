@@ -92,7 +92,7 @@ Runs `nuclei` on a list of targets with specified templates and custom headers.
 - `subfinder -d example.com -silent -all`
 - `dnsx -resp -silent -r /path/to/resolvers.txt`
 - `httpx -silent -title -rl 5 -status-code -td -mc 200,201,202,203,204,206,301,302,303,307,308 -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"`
-- `nuclei -rl 5 -ss template-spray -H "X-Bug-Bounty: s1d6p01nt7@program_name" -t /path/to/template.yaml`
+- `nuclei -rl 5 -ss template-spray -H "X-Bug-Bounty: researcher@program_name" -t /path/to/template.yaml`
 
 ## Notes
 
