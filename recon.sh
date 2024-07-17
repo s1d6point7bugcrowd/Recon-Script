@@ -48,8 +48,8 @@ else
 fi
 
 # Prompt to use proxychains
-announce_message "Do you want to use proxychains to bypass Web Application Firewall? Enter yes or no."
-echo -e "${ORANGE}Do you want to use proxychains to bypass WAF? (y/n)${NC}"
+announce_message "Do you want to use proxychains? Enter yes or no."
+echo -e "${ORANGE}Do you want to use proxychains? (y/n)${NC}"
 read USE_PROXYCHAINS
 
 # Set proxychains command based on user input
