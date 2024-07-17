@@ -87,6 +87,10 @@ Finds new subdomains discovered by `dnsx` and not present in the original subdom
 ### `run_nuclei`
 Runs `nuclei` on a list of targets with specified templates and custom headers.
 
+Customizable Nuclei template paths and tags
+
+Proxy support using `proxychains`
+
 ## Example Commands
 
 - `subfinder -d example.com -silent -all`
