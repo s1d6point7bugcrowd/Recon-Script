@@ -117,6 +117,18 @@ else
     TEMPLATE_TAGS_ARRAY=(${TEMPLATE_TAGS//,/ })
 fi
 
+# Prompt for Nuclei severity levels
+announce_message "Enter the Nuclei severity levels (comma-separated)."
+echo -e "${ORANGE}Enter the Nuclei severity levels (comma-separated):${NC}"
+read SEVERITY_LEVELS
+
+# Handle Nuclei severity levels
+if [ -z "$SEVERITY_LEVELS" ]; then
+    SEVERITY_FLAG=""
+else
+    SEVERITY_FLAG="-s ${SEVERITY_LEVELS//,/ }"
+fi
+
 # Function to announce vulnerability severity
 function announce_vulnerability() {
     local severity=$1
@@ -146,7 +158,7 @@ fi
 # Function to run Nuclei
 function run_nuclei() {
     local target_file=$1
-    local nuclei_cmd="nuclei -rl 5 -ss template-spray -H \"$CUSTOM_HEADER\""
+    local nuclei_cmd="nuclei -rl 5 -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG"
 
     if [ ${#TEMPLATE_PATHS_ARRAY[@]} -ne 0 ]; then
         for template_path in "${TEMPLATE_PATHS_ARRAY[@]}"; do
@@ -298,5 +310,5 @@ else
     exit 1
 fi
 
-announce_message "Web application recon completed."
-echo -e "${GREEN}Web application recon completed.${NC}"
+announce_message "Nuclei scan completed."
+echo -e "${GREEN}Nuclei scan completed.${NC}"
