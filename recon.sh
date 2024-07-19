@@ -126,7 +126,7 @@ read SEVERITY_LEVELS
 if [ -z "$SEVERITY_LEVELS" ]; then
     SEVERITY_FLAG=""
 else
-    SEVERITY_FLAG="-s ${SEVERITY_LEVELS//,/ }"
+    SEVERITY_FLAG="-s ${SEVERITY_LEVELS}"
 fi
 
 # Function to announce vulnerability severity
