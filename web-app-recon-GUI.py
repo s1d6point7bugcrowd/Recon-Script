@@ -7,7 +7,7 @@ import signal
 import re
 import time
 
-class VulnerabilityScannerApp:
+class Web App Recon:
     def __init__(self, root):
         self.root = root
         root.title("Vulnerability Scanner")
