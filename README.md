@@ -11,6 +11,8 @@ This script is designed to automate the process of scanning domains and URLs for
 
 ## Prerequisites
 
+***Tested on Kali Linux***
+
 https://github.com/trickest/resolvers
 
 
