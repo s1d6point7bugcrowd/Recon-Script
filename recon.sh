@@ -226,7 +226,7 @@ function find_new_subdomains() {
 }
 
 # Trap function to allow user to stop dnsx scan
-trap 'echo -e "${RED}dnsx scan interrupted. Using collected subdomains...${NC}"; find_new_subdomains "${DATA_DIR}/${TARGET}-filtered-subs.txt" "${DATA_DIR}/${TARGET}-dnsx-results.txt" "${DATA_DIR}/${TARGET}-new-subdomains.txt"; exit' SIGINT
+trap 'echo -e "${RED}dnsx scan interrupted. Using collected subdomains...${NC}"; break' SIGINT
 
 # Main logic for domain or URL scan
 if [[ "$SCAN_TYPE" -eq 1 ]]; then
