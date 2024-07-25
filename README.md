@@ -7,105 +7,121 @@ Important: This script is intended for authorized security testing purposes only
 # Web Application Security Automation Script
 
 
-This script is designed to automate the process of scanning domains and URLs for vulnerabilities using `subfinder`, `dnsx`, `httpx`, and `nuclei`. It includes options for enabling voice announcements, storing data, filtering out-of-scope patterns, and specifying custom Nuclei templates.
+Overview
 
-## Prerequisites
+This script automates the process of subdomain discovery, filtering out-of-scope patterns, testing the responsiveness of discovered subdomains, and scanning for vulnerabilities using various tools like subfinder, dnsx, httpx, and nuclei. It also includes voice announcements for key events and the ability to use proxychains for network traffic.
+Prerequisites
 
-***Tested on Kali Linux***
+Ensure the following tools are installed and accessible in your PATH:
 
-https://github.com/trickest/resolvers
+    subfinder
+    dnsx
+    httpx
+    nuclei
+    espeak
+    proxychains (optional)
+    anew
+    lolcat
 
+Script Usage
+Running the Script
 
-Ensure the following tools are installed and available in your `PATH`:
-- `espeak`
-- `lolcat`
-- `subfinder`
-- `dnsx`
-- `httpx`
-- `nuclei`
-- `anew`
+To run the script, use the following command:
 
-## Usage
+bash
 
-1. Clone or download this repository to your local machine.
-2. Make the script executable: `chmod +x scan_script.sh`
-3. Run the script: `./scan_script.sh`
+./subdomain_vuln_scan.sh
 
-## Script Workflow
+Script Prompts and Configurations
 
-### Voice Announcements
-- **Prompt**: Enable voice announcements (`y/n`)
-- If enabled, the script uses `espeak` for voice notifications.
+    Voice Announcements:
+        Prompt: Do you want to enable voice announcements? (y/n)
+        Functionality: Enables voice notifications using espeak.
 
-### Data Storage
-- **Prompt**: Store data permanently (`y/n`)
-- If "no", data is stored in `/tmp`.
-- If "yes", data is stored in `./data`.
+    Data Storage:
+        Prompt: Do you want to store the data permanently? (y/n)
+        Functionality: Choose between temporary storage (/tmp) or permanent storage (./data).
 
-### Scan Type
-- **Prompt**: Scan a domain (1) or a single URL (2)
-- Based on selection, the script proceeds with domain or URL scanning.
+    Proxychains Usage:
+        Prompt: Do you want to use proxychains? (y/n)
+        Functionality: Option to use proxychains for network traffic.
 
-### Out-of-Scope Patterns
-- **Prompt**: Enter comma-separated out-of-scope patterns (e.g., `*.example.com, example.example.com`)
-- The script uses these patterns to filter results.
+    Scan Type:
+        Prompt: Do you want to test a domain (1) or a single URL (2)?
+        Functionality: Decide to scan a domain or a single URL.
 
-### Bug Bounty Program
-- **Prompt**: Enter the bug bounty program name
-- A custom header `X-Bug-Bounty` with the entered program name is used in HTTP requests.
+    Out-of-Scope Patterns:
+        Prompt: Enter comma-separated out-of-scope patterns (e.g., *.example.com, example.example.com):
+        Functionality: Input patterns to exclude from scanning.
 
-### Nuclei Templates
-- **Prompt**: Enter the Nuclei template paths (comma-separated)
-- The script uses the specified templates for scanning.
+    Bug Bounty Program Name:
+        Prompt: Enter the bug bounty program name:
+        Functionality: Input program name for a custom header.
 
-## Domain Scan Workflow
+    Nuclei Template Paths:
+        Prompt: Enter the Nuclei template paths (comma-separated):
+        Functionality: Specify paths for nuclei templates.
 
-1. **Subdomain Discovery**: Uses `subfinder` to discover subdomains.
-2. **Out-of-Scope Filtering**: Filters subdomains based on out-of-scope patterns.
-3. **DNS Resolution**: Uses `dnsx` to resolve and expand subdomain results.
-4. **HTTP Probe**: Uses `httpx` to probe subdomains for HTTP services.
-5. **Nuclei Scan**: Runs `nuclei` on the filtered and resolved subdomains.
+    Nuclei Template Tags:
+        Prompt: Enter the Nuclei template tags (comma-separated):
+        Functionality: Specify tags for nuclei templates.
 
-## URL Scan Workflow
+    Nuclei Severity Levels:
+        Prompt: Enter the Nuclei severity levels (comma-separated):
+        Functionality: Input severity levels to filter scan results.
 
-1. **HTTP Probe**: Uses `httpx` to probe the specified URL.
-2. **Out-of-Scope Check**: Ensures the URL is in scope.
-3. **Nuclei Scan**: Runs `nuclei` on the active and in-scope URL.
+    DNSX Wordlist:
+        Prompt: Enter the path to the dnsx wordlist:
+        Functionality: Provide a path to a wordlist for dnsx.
 
-## Functions
+Interrupting the DNSX Scan
 
-### `announce_message`
-Announces messages using `espeak` if voice announcements are enabled.
+A trap function has been added to allow users to stop the dnsx scan by sending an interrupt signal (Ctrl+C). This will use the subdomains collected up to that point and continue the script without breaking.
+Functions
+announce_message
 
-### `announce_vulnerability`
-Announces the detection of vulnerabilities based on severity.
+    Usage: announce_message "Your message here"
+    Description: Announces a message using espeak if voice notifications are enabled.
 
-### `filter_oos`
-Filters lines based on out-of-scope patterns.
+run_nuclei
 
-### `find_new_subdomains`
-Finds new subdomains discovered by `dnsx` and not present in the original subdomain list.
+    Usage: run_nuclei target_file
+    Description: Runs nuclei on the targets listed in the specified file.
 
-### `run_nuclei`
-Runs `nuclei` on a list of targets with specified templates and custom headers.
+filter_oos
 
-Customizable Nuclei template paths and tags
+    Usage: filter_oos input_file output_file
+    Description: Filters out-of-scope patterns from the input file and writes the in-scope patterns to the output file.
 
-Proxy support using `proxychains`
+find_new_subdomains
 
-## Example Commands
+    Usage: find_new_subdomains original_file new_file output_file
+    Description: Finds new subdomains discovered by dnsx and writes them to the output file.
 
-- `subfinder -d example.com -silent -all`
-- `dnsx -resp -silent -r /path/to/resolvers.txt`
-- `httpx -silent -title -rl 5 -status-code -td -mc 200,201,202,203,204,206,301,302,303,307,308 -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"`
-- `nuclei -rl 5 -ss template-spray -H "X-Bug-Bounty: researcher@program_name" -t /path/to/template.yaml`
+announce_vulnerability
 
-## Notes
+    Usage: announce_vulnerability severity
+    Description: Announces the detected vulnerability severity.
 
-- Customize the script as per your requirements, especially the paths to tools and resolvers.
-- Ensure appropriate permissions and scopes are in place for bug bounty programs.
-- The script includes debug messages to assist in troubleshooting.
+Example Workflow
 
+    Scan a Domain:
+        Enter 1 when prompted to scan a domain.
+        Provide the target domain.
+        Follow the prompts to configure out-of-scope patterns, nuclei template paths, tags, and severity levels.
+        The script will discover subdomains, filter them, and run dnsx, httpx, and nuclei scans on the valid subdomains.
+
+    Scan a Single URL:
+        Enter 2 when prompted to scan a single URL.
+        Provide the target URL.
+        Follow the prompts to configure out-of-scope patterns, nuclei template paths, tags, and severity levels.
+        The script will test the URL for responsiveness and run a nuclei scan if the URL is in scope.
+
+Notes
+
+    Ensure you have the necessary permissions to scan the target domains/URLs.
+    The script uses trap to handle interruptions during the dnsx scan gracefully.
+    Voice notifications require espeak to be installed.
 ## License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
