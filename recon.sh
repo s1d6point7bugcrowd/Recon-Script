@@ -129,6 +129,11 @@ else
     SEVERITY_FLAG="-s ${SEVERITY_LEVELS}"
 fi
 
+# Prompt for dnsx wordlist
+announce_message "Enter the path to the dnsx wordlist."
+echo -e "${ORANGE}Enter the path to the dnsx wordlist:${NC}"
+read DNSX_WORDLIST
+
 # Function to announce vulnerability severity
 function announce_vulnerability() {
     local severity=$1
@@ -220,6 +225,9 @@ function find_new_subdomains() {
     fi
 }
 
+# Trap function to allow user to stop dnsx scan
+trap 'echo -e "${RED}dnsx scan interrupted. Using collected subdomains...${NC}"; find_new_subdomains "${DATA_DIR}/${TARGET}-filtered-subs.txt" "${DATA_DIR}/${TARGET}-dnsx-results.txt" "${DATA_DIR}/${TARGET}-new-subdomains.txt"; exit' SIGINT
+
 # Main logic for domain or URL scan
 if [[ "$SCAN_TYPE" -eq 1 ]]; then
     announce_message "Enter the target domain."
@@ -238,7 +246,7 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Running dnsx on filtered subdomains with resolver list to expand results..."
     echo -e "${ORANGE}OOS filtering completed. Running dnsx...${NC}"
-    $PROXYCHAINS_CMD dnsx -rl 5 -resp -silent -r /home/kali/resolvers/resolvers-community.txt < ${DATA_DIR}/${TARGET}-filtered-subs.txt | anew ${DATA_DIR}/${TARGET}-dnsx-results.txt
+    $PROXYCHAINS_CMD dnsx -rl 5 -resp -silent -r /home/kali/resolvers/resolvers-community.txt -w $DNSX_WORDLIST -d ${DATA_DIR}/${TARGET}-filtered-subs.txt | anew ${DATA_DIR}/${TARGET}-dnsx-results.txt
 
     # Combine results from dnsx to further discover subdomains
     anew ${DATA_DIR}/${TARGET}-dnsx-results.txt < ${DATA_DIR}/${TARGET}-filtered-subs.txt > ${DATA_DIR}/${TARGET}-combined-subs.txt
