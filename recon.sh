@@ -129,6 +129,16 @@ else
     SEVERITY_FLAG="-s ${SEVERITY_LEVELS}"
 fi
 
+# Prompt for Nuclei rate limit
+announce_message "Enter the rate limit for Nuclei requests per second (default is 5)."
+echo -e "${ORANGE}Enter the rate limit for Nuclei requests per second (default is 5):${NC}"
+read RATE_LIMIT
+
+# Set default rate limit if not provided
+if [ -z "$RATE_LIMIT" ]; then
+    RATE_LIMIT=5
+fi
+
 # Prompt for dnsx wordlist
 announce_message "Enter the path to the dnsx wordlist."
 echo -e "${ORANGE}Enter the path to the dnsx wordlist:${NC}"
@@ -163,7 +173,7 @@ fi
 # Function to run Nuclei
 function run_nuclei() {
     local target_file=$1
-    local nuclei_cmd="nuclei -rl 5 -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG"
+    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG"
 
     if [ ${#TEMPLATE_PATHS_ARRAY[@]} -ne 0 ]; then
         for template_path in "${TEMPLATE_PATHS_ARRAY[@]}"; do
@@ -224,9 +234,6 @@ function find_new_subdomains() {
         echo -e "${CYAN}No new subdomains discovered by dnsx.${NC}"
     fi
 }
-
-# Trap function to allow user to stop dnsx scan
-trap 'echo -e "${RED}dnsx scan interrupted. Using collected subdomains...${NC}"; break' SIGINT
 
 # Main logic for domain or URL scan
 if [[ "$SCAN_TYPE" -eq 1 ]]; then
