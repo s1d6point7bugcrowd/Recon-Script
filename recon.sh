@@ -197,11 +197,6 @@ function run_nuclei() {
         nuclei_cmd+=" -tags ${TEMPLATE_TAGS_ARRAY[*]}"
     fi
 
-    # Record the start time
-    local start_time=$(date '+%Y-%m-%d %H:%M:%S')
-    echo -e "${CYAN}Scan started at: $start_time${NC}"
-    echo "Scan started at: $start_time" >> "${DATA_DIR}/nuclei-scan-log.txt"
-
     echo -e "${ORANGE}Running nuclei command: $nuclei_cmd on targets in $target_file...${NC}"
     eval "$PROXYCHAINS_CMD cat $target_file | $nuclei_cmd" | tee -a "${DATA_DIR}/nuclei-output.txt" | while read -r line; do
         echo "$line"
@@ -213,11 +208,6 @@ function run_nuclei() {
             announce_vulnerability "critical"
         fi
     done
-
-    # Record the stop time
-    local stop_time=$(date '+%Y-%m-%d %H:%M:%S')
-    echo -e "${CYAN}Scan completed at: $stop_time${NC}"
-    echo "Scan completed at: $stop_time" >> "${DATA_DIR}/nuclei-scan-log.txt"
 }
 
 # Function to filter out-of-scope patterns
@@ -269,7 +259,7 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Filtering out-of-scope patterns from subfinder results..."
     echo -e "${ORANGE}Subfinder completed. Filtering OOS patterns...${NC}"
-    filter_oos "${DATA_DIR}/${TARGET}-subs.txt" "${DATA_DIR}/${TARGET}-filtered-subs.txt}"
+    filter_oos "${DATA_DIR}/${TARGET}-subs.txt" "${DATA_DIR}/${TARGET}-filtered-subs.txt"
     echo -e "${ORANGE}Filtered subdomains:${NC}"
     cat ${DATA_DIR}/${TARGET}-filtered-subs.txt
 
