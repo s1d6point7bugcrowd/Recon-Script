@@ -59,6 +59,18 @@ else
     PROXYCHAINS_CMD=""
 fi
 
+# Prompt to use Nuclei cloud features
+announce_message "Do you want to use Nuclei cloud features? Enter yes or no."
+echo -e "${ORANGE}Do you want to use Nuclei cloud features? (y/n)${NC}"
+read USE_NUCLEI_CLOUD
+
+# Set cloud upload flag based on user input
+if [ "$USE_NUCLEI_CLOUD" == "y" ]; then
+    CLOUD_UPLOAD_FLAG="-cloud-upload"
+else
+    CLOUD_UPLOAD_FLAG=""
+fi
+
 # Prompt to scan a domain or a single URL
 announce_message "Do you want to test a domain or a single URL? Enter one for domain or two for URL."
 echo -e "${ORANGE}Do you want to test a domain (1) or a single URL (2)?${NC}"
@@ -173,7 +185,7 @@ fi
 # Function to run Nuclei
 function run_nuclei() {
     local target_file=$1
-    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG"
+    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG $CLOUD_UPLOAD_FLAG"
 
     if [ ${#TEMPLATE_PATHS_ARRAY[@]} -ne 0 ]; then
         for template_path in "${TEMPLATE_PATHS_ARRAY[@]}"; do
@@ -184,6 +196,11 @@ function run_nuclei() {
     if [ ${#TEMPLATE_TAGS_ARRAY[@]} -ne 0 ]; then
         nuclei_cmd+=" -tags ${TEMPLATE_TAGS_ARRAY[*]}"
     fi
+
+    # Record the start time
+    local start_time=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "${CYAN}Scan started at: $start_time${NC}"
+    echo "Scan started at: $start_time" >> "${DATA_DIR}/nuclei-scan-log.txt"
 
     echo -e "${ORANGE}Running nuclei command: $nuclei_cmd on targets in $target_file...${NC}"
     eval "$PROXYCHAINS_CMD cat $target_file | $nuclei_cmd" | tee -a "${DATA_DIR}/nuclei-output.txt" | while read -r line; do
@@ -196,6 +213,11 @@ function run_nuclei() {
             announce_vulnerability "critical"
         fi
     done
+
+    # Record the stop time
+    local stop_time=$(date '+%Y-%m-%d %H:%M:%S')
+    echo -e "${CYAN}Scan completed at: $stop_time${NC}"
+    echo "Scan completed at: $stop_time" >> "${DATA_DIR}/nuclei-scan-log.txt"
 }
 
 # Function to filter out-of-scope patterns
@@ -247,7 +269,7 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Filtering out-of-scope patterns from subfinder results..."
     echo -e "${ORANGE}Subfinder completed. Filtering OOS patterns...${NC}"
-    filter_oos "${DATA_DIR}/${TARGET}-subs.txt" "${DATA_DIR}/${TARGET}-filtered-subs.txt"
+    filter_oos "${DATA_DIR}/${TARGET}-subs.txt" "${DATA_DIR}/${TARGET}-filtered-subs.txt}"
     echo -e "${ORANGE}Filtered subdomains:${NC}"
     cat ${DATA_DIR}/${TARGET}-filtered-subs.txt
 
