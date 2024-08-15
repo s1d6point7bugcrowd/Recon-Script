@@ -10,6 +10,8 @@ This script automates the process of running security scans using Nuclei, a powe
 
 ## Features
 
+***Added new HTTPX Cloud Feature Option***
+
 - **Voice Notifications**: Get voice alerts for various actions and vulnerability detections.
 - **Proxychains Support**: Run the scans through a proxy for anonymization or bypassing restrictions.
 - **Nuclei Cloud Features**: Option to upload scan results to the ProjectDiscovery Cloud Platform (PDCP).
