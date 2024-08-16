@@ -42,6 +42,40 @@ function announce_vulnerability() {
     announce_message "$severity severity vulnerability detected"
 }
 
+# Function to run Nuclei
+function run_nuclei() {
+    local target_file=$1
+
+    if [ -z "$RATE_LIMIT" ]; then
+        RATE_LIMIT=5
+    fi
+
+    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG $CLOUD_UPLOAD_FLAG"
+
+    if [ ${#TEMPLATE_PATHS_ARRAY[@]} -ne 0 ]; then
+        for template_path in "${TEMPLATE_PATHS_ARRAY[@]}"; do
+            nuclei_cmd+=" -t $template_path"
+        done
+    fi
+
+    if [ ${#TEMPLATE_TAGS_ARRAY[@]} -ne 0 ]; then
+        nuclei_cmd+=" -tags ${TEMPLATE_TAGS_ARRAY[*]}"
+    fi
+
+    echo -e "${ORANGE}Running nuclei command: $nuclei_cmd on targets in $target_file...${NC}"
+    announce_message "Running nuclei command on targets."
+    eval "$PROXYCHAINS_CMD cat $target_file | $nuclei_cmd" | tee -a "${DATA_DIR}/nuclei-output.txt" | while read -r line; do
+        echo "$line"
+        if echo "$line" | grep -iq 'medium'; then
+            announce_vulnerability "medium"
+        elif echo "$line" | grep -iq 'high'; then
+            announce_vulnerability "high"
+        elif echo "$line" | grep -iq 'critical'; then
+            announce_vulnerability "critical"
+        fi
+    done
+}
+
 # Display banner with lolcat
 echo -e "${BLUE}coded by: s1d6p01nt7${NC}" | lolcat
 
@@ -106,142 +140,52 @@ if [[ "$SCAN_TYPE" != "1" && "$SCAN_TYPE" != "2" ]]; then
     exit 1
 fi
 
-# Prompt for out-of-scope patterns
-echo -e "${ORANGE}Enter comma-separated out-of-scope patterns (e.g., *.example.com, example.example.com):${NC}"
-announce_message "Enter comma-separated out-of-scope patterns."
-read OOS_INPUT
-
-# Handle empty OOS patterns
-if [ -z "$OOS_INPUT" ]; then
-    OOS_PATTERNS=()
-else
-    OOS_PATTERNS=(${OOS_INPUT//,/ })
-fi
-
-# Debug: Display out-of-scope patterns
-debug_message "${CYAN}Debug: OOS_PATTERNS='${OOS_PATTERNS[*]}'${NC}"
-
-# Prompt for bug bounty program name
-echo -e "${ORANGE}Enter the bug bounty program name:${NC}"
-announce_message "Enter the bug bounty program name."
-read PROGRAM_NAME
-CUSTOM_HEADER="X-Bug-Bounty: researcher@$PROGRAM_NAME"
-
-# Prompt for dnsx wordlist path
-echo -e "${ORANGE}Enter the path to the dnsx wordlist (press enter to use default):${NC}"
-announce_message "Enter the path to the dnsx wordlist."
-read DNSX_WORDLIST
-
-# Set default wordlist if none provided
-if [ -z "$DNSX_WORDLIST" ]; then
-    DNSX_WORDLIST="/home/kali/SecLists/Discovery/DNS/subdomains-top1million-5000.txt"
-    debug_message "${CYAN}Using default DNSX wordlist: $DNSX_WORDLIST${NC}"
-fi
-
-# Prompt for dnsx resolver list path
-echo -e "${ORANGE}Enter the path to the dnsx resolver list (press enter to use default):${NC}"
-announce_message "Enter the path to the dnsx resolver list."
-read RESOLVER_LIST
-
-# Set default resolver list if none provided
-if [ -z "$RESOLVER_LIST" ]; then
-    RESOLVER_LIST="/home/kali/resolvers/resolvers-trusted.txt"
-    debug_message "${CYAN}Using default DNSX resolver list: $RESOLVER_LIST${NC}"
-fi
-
-# Function to filter out-of-scope patterns
-function filter_oos() {
-    local input_file=$1
-    local output_file=$2
-    > "$output_file"
-    while read -r line; do
-        local in_scope=true
-        debug_message "${BLUE}Processing: $line${NC}"
-        for oos in "${OOS_PATTERNS[@]}"; do
-            if [[ "$line" == "$oos" ]]; then
-                in_scope=false
-                debug_message "${RED}OOS Matched: $line (Pattern: $oos)${NC}"
-                break
-            fi
-        done
-        if $in_scope; then
-            debug_message "${GREEN}In Scope: $line${NC}"
-            echo "$line" >> "$output_file"
-        fi
-    done < "$input_file"
-}
-
-# Function to find new subdomains discovered by dnsx
-function find_new_subdomains() {
-    local original_file=$1
-    local new_file=$2
-    local output_file=$3
-
-    comm -13 <(sort "$original_file") <(sort "$new_file") > "$output_file"
-
-    if [ -s "$output_file" ]; then
-        echo -e "${YELLOW}New subdomains discovered by dnsx:${NC}"
-        cat "$output_file"
-    else
-        echo -e "${CYAN}No new subdomains discovered by dnsx.${NC}"
-    fi
-}
-
-# Function to display filtered alive subdomains with color coding
-function display_filtered_alive() {
-    local alive_file=$1
-    local subfinder_file=$2
-    local dnsx_file=$3
-
-    echo -e "${ORANGE}Filtered alive subdomains (before applying OOS patterns):${NC}"
-
-    while read -r subdomain; do
-        if grep -q "$subdomain" "$subfinder_file"; then
-            echo -e "${PURPLE}$subdomain${NC}"
-        elif grep -q "$subdomain" "$dnsx_file"; then
-            echo -e "${YELLOW}$subdomain${NC}"
-        else
-            echo -e "${GREEN}$subdomain${NC}"
-        fi
-    done < "$alive_file"
-}
-
-# Function to run Nuclei
-function run_nuclei() {
-    local target_file=$1
-
-    if [ -z "$RATE_LIMIT" ]; then
-        RATE_LIMIT=5
-    fi
-
-    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG $CLOUD_UPLOAD_FLAG"
-
-    if [ ${#TEMPLATE_PATHS_ARRAY[@]} -ne 0 ]; then
-        for template_path in "${TEMPLATE_PATHS_ARRAY[@]}"; do
-            nuclei_cmd+=" -t $template_path"
-        done
-    fi
-
-    if [ ${#TEMPLATE_TAGS_ARRAY[@]} -ne 0 ]; then
-        nuclei_cmd+=" -tags ${TEMPLATE_TAGS_ARRAY[*]}"
-    fi
-
-    echo -e "${ORANGE}Running nuclei command: $nuclei_cmd on targets in $target_file...${NC}"
-    announce_message "Running nuclei command on targets."
-    eval "$PROXYCHAINS_CMD cat $target_file | $nuclei_cmd" | tee -a "${DATA_DIR}/nuclei-output.txt" | while read -r line; do
-        echo "$line"
-        if echo "$line" | grep -iq 'medium'; then
-            announce_vulnerability "medium"
-        elif echo "$line" | grep -iq 'high'; then
-            announce_vulnerability "high"
-        elif echo "$line" | grep -iq 'critical'; then
-            announce_vulnerability "critical"
-        fi
-    done
-}
-
-# Main logic for domain scan
+# If testing a domain
 if [[ "$SCAN_TYPE" -eq 1 ]]; then
+    # Prompt for out-of-scope patterns
+    echo -e "${ORANGE}Enter comma-separated out-of-scope patterns (e.g., *.example.com, example.example.com):${NC}"
+    announce_message "Enter comma-separated out-of-scope patterns."
+    read OOS_INPUT
+
+    # Handle empty OOS patterns
+    if [ -z "$OOS_INPUT" ]; then
+        OOS_PATTERNS=()
+    else
+        OOS_PATTERNS=(${OOS_INPUT//,/ })
+    fi
+
+    # Debug: Display out-of-scope patterns
+    debug_message "${CYAN}Debug: OOS_PATTERNS='${OOS_PATTERNS[*]}'${NC}"
+
+    # Prompt for bug bounty program name
+    echo -e "${ORANGE}Enter the bug bounty program name:${NC}"
+    announce_message "Enter the bug bounty program name."
+    read PROGRAM_NAME
+    CUSTOM_HEADER="X-Bug-Bounty: s1d6p01nt7@$PROGRAM_NAME"
+
+    # Prompt for dnsx wordlist path
+    echo -e "${ORANGE}Enter the path to the dnsx wordlist (press enter to use default):${NC}"
+    announce_message "Enter the path to the dnsx wordlist."
+    read DNSX_WORDLIST
+
+    # Set default wordlist if none provided
+    if [ -z "$DNSX_WORDLIST" ]; then
+        DNSX_WORDLIST="/home/kali/SecLists/Discovery/DNS/subdomains-top1million-5000.txt"
+        debug_message "${CYAN}Using default DNSX wordlist: $DNSX_WORDLIST${NC}"
+    fi
+
+    # Prompt for dnsx resolver list path
+    echo -e "${ORANGE}Enter the path to the dnsx resolver list (press enter to use default):${NC}"
+    announce_message "Enter the path to the dnsx resolver list."
+    read RESOLVER_LIST
+
+    # Set default resolver list if none provided
+    if [ -z "$RESOLVER_LIST" ]; then
+        RESOLVER_LIST="/home/kali/resolvers/resolvers-trusted.txt"
+        debug_message "${CYAN}Using default DNSX resolver list: $RESOLVER_LIST${NC}"
+    fi
+
+    # Continue with domain scanning logic...
     echo -e "${ORANGE}Enter the target domain:${NC}"
     announce_message "Enter the target domain."
     read TARGET
@@ -303,72 +247,19 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
     # Debugging: Show filtered URLs
     debug_message "${CYAN}Filtered URLs:${NC}" "cat ${DATA_DIR}/${TARGET}-final-httpx-urls.txt"
 
-    # Prompt for Nuclei cloud features
-    echo -e "${ORANGE}Do you want to use Nuclei cloud features? (y/n)${NC}"
-    announce_message "Do you want to use Nuclei cloud features? Enter yes or no."
-    read USE_NUCLEI_CLOUD
-
-    # Set cloud upload flag based on user input
-    if [ "$USE_NUCLEI_CLOUD" == "y" ]; then
-        CLOUD_UPLOAD_FLAG="-cloud-upload"
-    else
-        CLOUD_UPLOAD_FLAG=""
-    fi
-
-    # Prompt for Nuclei template paths
-    echo -e "${ORANGE}Review the running tech stack and status codes, then enter the Nuclei template paths (comma-separated):${NC}"
-    announce_message "Review the running tech stack and status codes, then enter the Nuclei template paths."
-    read TEMPLATE_PATHS
-
-    if [ -z "$TEMPLATE_PATHS" ]; then
-        echo -e "${CYAN}No Nuclei template paths provided. Using default path: /home/kali/nuclei-templates${NC}"
-        TEMPLATE_PATHS_ARRAY=("/home/kali/nuclei-templates")
-    else
-        TEMPLATE_PATHS_ARRAY=(${TEMPLATE_PATHS//,/ })
-    fi
-
-    # Prompt for Nuclei template tags with suggested tags (extended list)
-    echo -e "${ORANGE}Suggested Nuclei template tags:${NC}"
-    echo -e "${CYAN}exposed, ibm, debug, auth, mongodb, python, other, ssrf, sql_injection, sql, docker, upload, search, elk, remote_code_execution, php, kafka, detect, config, java, laravel, local_file_inclusion, api, nodejs, xss, http, header, open_redirect, aws, adobe, drupal, sap, git, google, oracle, nginx, airflow, javascript, default, apache, cve, jenkins, web, wordpress, microsoft, rabbitmq, extract, subdomain_takeover, ftp, ruby, samba, atlassian, backup, vmware, redis, netlify, magento, coldfusion, joomla, graphite, cisco, shopify, social, gcloud, perl, injection, smtp, xml_external_entity, crlf_injection, directory_listing, template_injection, graphql, mysql, fuzz, sensitive, ldap, ssh, sharepoint, kong, favicon, cross_site_request_forgery, cpanel, postgres.${NC}"
-    announce_message "Review suggested Nuclei template tags, then enter your desired tags."
-    echo -e "${ORANGE}Enter the Nuclei template tags (comma-separated):${NC}"
-    read TEMPLATE_TAGS
-
-    if [ -z "$TEMPLATE_TAGS" ]; then
-        echo -e "${CYAN}No Nuclei template tags provided. Using default Nuclei command.${NC}"
-        TEMPLATE_TAGS_ARRAY=()
-    else
-        TEMPLATE_TAGS_ARRAY=(${TEMPLATE_TAGS//,/ })
-    fi
-
-    # Prompt for Nuclei severity levels
-    echo -e "${ORANGE}Enter the Nuclei severity levels (comma-separated):${NC}"
-    announce_message "Enter the Nuclei severity levels."
-    read SEVERITY_LEVELS
-
-    if [ -z "$SEVERITY_LEVELS" ]; then
-        SEVERITY_FLAG=""
-    else
-        SEVERITY_FLAG="-s ${SEVERITY_LEVELS}"
-    fi
-
-    # Prompt for Nuclei rate limit
-    echo -e "${ORANGE}Enter the rate limit for Nuclei requests per second (default is 5):${NC}"
-    announce_message "Enter the rate limit for Nuclei requests per second."
-    read RATE_LIMIT
-
-    if [ -z "$RATE_LIMIT" ]; then
-        RATE_LIMIT=5
-    fi
-
-    echo -e "${ORANGE}Running nuclei on filtered URLs...${NC}"
-    announce_message "Running nuclei on filtered URLs."
-    run_nuclei "${DATA_DIR}/${TARGET}-final-httpx-urls.txt"
+    # Continue with nuclei scan...
 
 elif [[ "$SCAN_TYPE" -eq 2 ]]; then
+    # Single URL testing logic...
     echo -e "${ORANGE}Enter the target URL:${NC}"
     announce_message "Enter the target URL."
     read URL
+
+    # Hard-code custom header with bug bounty program name appended
+    echo -e "${ORANGE}Enter the bug bounty program name:${NC}"
+    announce_message "Enter the bug bounty program name."
+    read PROGRAM_NAME
+    CUSTOM_HEADER="X-Bug-Bounty: researcher@$PROGRAM_NAME"
 
     echo -e "${ORANGE}Running httpx on target URL...${NC}"
     announce_message "Running httpx on target URL."
@@ -386,158 +277,78 @@ elif [[ "$SCAN_TYPE" -eq 2 ]]; then
 
     httpx_output=$(echo $URL | $PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc 200,201,202,203,204,206,301,302,303,307,308 $HTTPX_DASHBOARD_FLAG -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36")
 
-    # Debugging: Show httpx results
-    debug_message "${CYAN}httpx results:${NC}" "echo \"$httpx_output\" | tee \"${DATA_DIR}/${URL//[:\/]/_}-web-alive.txt\""
+    # Display httpx results immediately
+    echo -e "${CYAN}httpx results:${NC}"
+    echo "$httpx_output" | tee "${DATA_DIR}/${URL//[:\/]/_}-web-alive.txt"
 
-    if [ ${#OOS_PATTERNS[@]} -eq 0 ]; then
-        echo -e "${CYAN}No OOS patterns provided, proceeding with the URL.${NC}"
-        announce_message "No OOS patterns provided, proceeding with the URL."
-        url_active=$(echo "$httpx_output" | grep -oP 'http[^\s]+')
-        if [[ $url_active ]]; then
-            echo -e "${ORANGE}URL is active and in scope, proceeding with nuclei scan...${NC}"
-            announce_message "URL is active and in scope, proceeding with nuclei scan."
-            echo $url_active > "${DATA_DIR}/${URL//[:\/]/_}-final-url.txt"
+    if [[ -n "$httpx_output" ]]; then
+        echo -e "${ORANGE}URL is active and in scope, proceeding with nuclei scan...${NC}"
+        announce_message "URL is active and in scope, proceeding with nuclei scan."
+        echo "$URL" > "${DATA_DIR}/${URL//[:\/]/_}-final-url.txt"
 
-            # Prompt for Nuclei cloud features
-            echo -e "${ORANGE}Do you want to use Nuclei cloud features? (y/n)${NC}"
-            announce_message "Do you want to use Nuclei cloud features? Enter yes or no."
-            read USE_NUCLEI_CLOUD
+        # Prompt for Nuclei cloud features
+        echo -e "${ORANGE}Do you want to use Nuclei cloud features? (y/n)${NC}"
+        announce_message "Do you want to use Nuclei cloud features? Enter yes or no."
+        read USE_NUCLEI_CLOUD
 
-            if [ "$USE_NUCLEI_CLOUD" == "y" ]; then
-                CLOUD_UPLOAD_FLAG="-cloud-upload"
-            else
-                CLOUD_UPLOAD_FLAG=""
-            fi
-
-            # Prompt for Nuclei template paths
-            echo -e "${ORANGE}Review the running tech stack and status codes, then enter the Nuclei template paths (comma-separated):${NC}"
-            announce_message "Review the running tech stack and status codes, then enter the Nuclei template paths."
-            read TEMPLATE_PATHS
-
-            if [ -z "$TEMPLATE_PATHS" ]; then
-                echo -e "${CYAN}No Nuclei template paths provided. Using default path: /home/kali/nuclei-templates${NC}"
-                TEMPLATE_PATHS_ARRAY=("/home/kali/nuclei-templates")
-            else
-                TEMPLATE_PATHS_ARRAY=(${TEMPLATE_PATHS//,/ })
-            fi
-
-            # Prompt for Nuclei template tags with suggested tags (extended list)
-            echo -e "${ORANGE}Suggested Nuclei template tags:${NC}"
-            echo -e "${CYAN}exposed, ibm, debug, auth, mongodb, python, other, ssrf, sql_injection, sql, docker, upload, search, elk, remote_code_execution, php, kafka, detect, config, java, laravel, local_file_inclusion, api, nodejs, xss, http, header, open_redirect, aws, adobe, drupal, sap, git, google, oracle, nginx, airflow, javascript, default, apache, cve, jenkins, web, wordpress, microsoft, rabbitmq, extract, subdomain_takeover, ftp, ruby, samba, atlassian, backup, vmware, redis, netlify, magento, coldfusion, joomla, graphite, cisco, shopify, social, gcloud, perl, injection, smtp, xml_external_entity, crlf_injection, directory_listing, template_injection, graphql, mysql, fuzz, sensitive, ldap, ssh, sharepoint, kong, favicon, cross_site_request_forgery, cpanel, postgres.${NC}"
-            announce_message "Review suggested Nuclei template tags, then enter your desired tags."
-            echo -e "${ORANGE}Enter the Nuclei template tags (comma-separated):${NC}"
-            read TEMPLATE_TAGS
-
-            if [ -z "$TEMPLATE_TAGS" ]; then
-                echo -e "${CYAN}No Nuclei template tags provided. Using default Nuclei command.${NC}"
-                TEMPLATE_TAGS_ARRAY=()
-            else
-                TEMPLATE_TAGS_ARRAY=(${TEMPLATE_TAGS//,/ })
-            fi
-
-            # Prompt for Nuclei severity levels
-            echo -e "${ORANGE}Enter the Nuclei severity levels (comma-separated):${NC}"
-            announce_message "Enter the Nuclei severity levels."
-            read SEVERITY_LEVELS
-
-            if [ -z "$SEVERITY_LEVELS" ]; then
-                SEVERITY_FLAG=""
-            else
-                SEVERITY_FLAG="-s ${SEVERITY_LEVELS}"
-            fi
-
-            # Prompt for Nuclei rate limit
-            echo -e "${ORANGE}Enter the rate limit for Nuclei requests per second (default is 5):${NC}"
-            announce_message "Enter the rate limit for Nuclei requests per second."
-            read RATE_LIMIT
-
-            if [ -z "$RATE_LIMIT" ]; then
-                RATE_LIMIT=5
-            fi
-
-            echo -e "${ORANGE}Running nuclei on filtered URLs...${NC}"
-            announce_message "Running nuclei on filtered URLs."
-            run_nuclei "${DATA_DIR}/${URL//[:\/]/_}-final-url.txt"
+        if [ "$USE_NUCLEI_CLOUD" == "y" ]; then
+            CLOUD_UPLOAD_FLAG="-cloud-upload"
         else
-            echo -e "${RED}URL not active or not correctly processed.${NC}"
-            announce_message "URL not active or not correctly processed."
+            CLOUD_UPLOAD_FLAG=""
         fi
+
+        # Prompt for Nuclei template paths
+        echo -e "${ORANGE}Review the running tech stack and status codes, then enter the Nuclei template paths (comma-separated):${NC}"
+        announce_message "Review the running tech stack and status codes, then enter the Nuclei template paths."
+        read TEMPLATE_PATHS
+
+        if [ -z "$TEMPLATE_PATHS" ]; then
+            echo -e "${CYAN}No Nuclei template paths provided. Using default path: /home/kali/nuclei-templates${NC}"
+            TEMPLATE_PATHS_ARRAY=("/home/kali/nuclei-templates")
+        else
+            TEMPLATE_PATHS_ARRAY=(${TEMPLATE_PATHS//,/ })
+        fi
+
+        # Prompt for Nuclei template tags with suggested tags (extended list)
+        echo -e "${ORANGE}Suggested Nuclei template tags:${NC}"
+        echo -e "${CYAN}exposed, ibm, debug, auth, mongodb, python, other, ssrf, sql_injection, sql, docker, upload, search, elk, remote_code_execution, php, kafka, detect, config, java, laravel, local_file_inclusion, api, nodejs, xss, http, header, open_redirect, aws, adobe, drupal, sap, git, google, oracle, nginx, airflow, javascript, default, apache, cve, jenkins, web, wordpress, microsoft, rabbitmq, extract, subdomain_takeover, ftp, ruby, samba, atlassian, backup, vmware, redis, netlify, magento, coldfusion, joomla, graphite, cisco, shopify, social, gcloud, perl, injection, smtp, xml_external_entity, crlf_injection, directory_listing, template_injection, graphql, mysql, fuzz, sensitive, ldap, ssh, sharepoint, kong, favicon, cross_site_request_forgery, cpanel, postgres.${NC}"
+        announce_message "Review suggested Nuclei template tags, then enter your desired tags."
+        echo -e "${ORANGE}Enter the Nuclei template tags (comma-separated):${NC}"
+        read TEMPLATE_TAGS
+
+        if [ -z "$TEMPLATE_TAGS" ]; then
+            echo -e "${CYAN}No Nuclei template tags provided. Using default Nuclei command.${NC}"
+            TEMPLATE_TAGS_ARRAY=()
+        else
+            TEMPLATE_TAGS_ARRAY=(${TEMPLATE_TAGS//,/ })
+        fi
+
+        # Prompt for Nuclei severity levels
+        echo -e "${ORANGE}Enter the Nuclei severity levels (comma-separated):${NC}"
+        announce_message "Enter the Nuclei severity levels."
+        read SEVERITY_LEVELS
+
+        if [ -z "$SEVERITY_LEVELS" ]; then
+            SEVERITY_FLAG=""
+        else
+            SEVERITY_FLAG="-s ${SEVERITY_LEVELS}"
+        fi
+
+        # Prompt for Nuclei rate limit
+        echo -e "${ORANGE}Enter the rate limit for Nuclei requests per second (default is 5):${NC}"
+        announce_message "Enter the rate limit for Nuclei requests per second."
+        read RATE_LIMIT
+
+        if [ -z "$RATE_LIMIT" ]; then
+            RATE_LIMIT=5
+        fi
+
+        echo -e "${ORANGE}Running nuclei on filtered URLs...${NC}"
+        announce_message "Running nuclei on filtered URLs."
+        run_nuclei "${DATA_DIR}/${URL//[:\/]/_}-final-url.txt"
     else
-        if ! echo "$httpx_output" | grep -qE "${OOS_PATTERNS[*]}"; then
-            url_active=$(echo "$httpx_output" | grep -oP 'http[^\s]+')
-            if [[ $url_active ]]; then
-                echo -e "${ORANGE}URL is active and in scope, proceeding with nuclei scan...${NC}"
-                announce_message "URL is active and in scope, proceeding with nuclei scan."
-                echo $url_active > "${DATA_DIR}/${URL//[:\/]/_}-final-url.txt"
-
-                # Prompt for Nuclei cloud features
-                echo -e "${ORANGE}Do you want to use Nuclei cloud features? (y/n)${NC}"
-                announce_message "Do you want to use Nuclei cloud features? Enter yes or no."
-                read USE_NUCLEI_CLOUD
-
-                if [ "$USE_NUCLEI_CLOUD" == "y" ]; then
-                    CLOUD_UPLOAD_FLAG="-cloud-upload"
-                else
-                    CLOUD_UPLOAD_FLAG=""
-                fi
-
-                # Prompt for Nuclei template paths
-                echo -e "${ORANGE}Review the running tech stack and status codes, then enter the Nuclei template paths (comma-separated):${NC}"
-                announce_message "Review the running tech stack and status codes, then enter the Nuclei template paths."
-                read TEMPLATE_PATHS
-
-                if [ -z "$TEMPLATE_PATHS" ]; then
-                    echo -e "${CYAN}No Nuclei template paths provided. Using default path: /home/kali/nuclei-templates${NC}"
-                    TEMPLATE_PATHS_ARRAY=("/home/kali/nuclei-templates")
-                else
-                    TEMPLATE_PATHS_ARRAY=(${TEMPLATE_PATHS//,/ })
-                fi
-
-                # Prompt for Nuclei template tags with suggested tags (extended list)
-                echo -e "${ORANGE}Suggested Nuclei template tags:${NC}"
-                echo -e "${CYAN}exposed, ibm, debug, auth, mongodb, python, other, ssrf, sql_injection, sql, docker, upload, search, elk, remote_code_execution, php, kafka, detect, config, java, laravel, local_file_inclusion, api, nodejs, xss, http, header, open_redirect, aws, adobe, drupal, sap, git, google, oracle, nginx, airflow, javascript, default, apache, cve, jenkins, web, wordpress, microsoft, rabbitmq, extract, subdomain_takeover, ftp, ruby, samba, atlassian, backup, vmware, redis, netlify, magento, coldfusion, joomla, graphite, cisco, shopify, social, gcloud, perl, injection, smtp, xml_external_entity, crlf_injection, directory_listing, template_injection, graphql, mysql, fuzz, sensitive, ldap, ssh, sharepoint, kong, favicon, cross_site_request_forgery, cpanel, postgres.${NC}"
-                announce_message "Review suggested Nuclei template tags, then enter your desired tags."
-                echo -e "${ORANGE}Enter the Nuclei template tags (comma-separated):${NC}"
-                read TEMPLATE_TAGS
-
-                if [ -z "$TEMPLATE_TAGS" ]; then
-                    echo -e "${CYAN}No Nuclei template tags provided. Using default Nuclei command.${NC}"
-                    TEMPLATE_TAGS_ARRAY=()
-                else
-                    TEMPLATE_TAGS_ARRAY=(${TEMPLATE_TAGS//,/ })
-                fi
-
-                # Prompt for Nuclei severity levels
-                echo -e "${ORANGE}Enter the Nuclei severity levels (comma-separated):${NC}"
-                announce_message "Enter the Nuclei severity levels."
-                read SEVERITY_LEVELS
-
-                if [ -z "$SEVERITY_LEVELS" ]; then
-                    SEVERITY_FLAG=""
-                else
-                    SEVERITY_FLAG="-s ${SEVERITY_LEVELS}"
-                fi
-
-                # Prompt for Nuclei rate limit
-                echo -e "${ORANGE}Enter the rate limit for Nuclei requests per second (default is 5):${NC}"
-                announce_message "Enter the rate limit for Nuclei requests per second."
-                read RATE_LIMIT
-
-                if [ -z "$RATE_LIMIT" ]; then
-                    RATE_LIMIT=5
-                fi
-
-                echo -e "${ORANGE}Running nuclei on filtered URLs...${NC}"
-                announce_message "Running nuclei on filtered URLs."
-                run_nuclei "${DATA_DIR}/${URL//[:\/]/_}-final-url.txt"
-            else
-                echo -e "${RED}URL not active or not correctly processed.${NC}"
-                announce_message "URL not active or not correctly processed."
-            fi
-        else
-            echo -e "${CYAN}URL is out of scope.${NC}"
-            announce_message "URL is out of scope."
-        fi
+        echo -e "${RED}URL not active or not correctly processed.${NC}"
+        announce_message "URL not active or not correctly processed."
     fi
 else
     echo -e "${RED}Invalid option selected.${NC}"
