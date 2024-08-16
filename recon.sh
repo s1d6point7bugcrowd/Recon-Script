@@ -161,7 +161,7 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
     echo -e "${ORANGE}Enter the bug bounty program name:${NC}"
     announce_message "Enter the bug bounty program name."
     read PROGRAM_NAME
-    CUSTOM_HEADER="X-Bug-Bounty: s1d6p01nt7@$PROGRAM_NAME"
+    CUSTOM_HEADER="X-Bug-Bounty: researcher@$PROGRAM_NAME"
 
     # Prompt for dnsx wordlist path
     echo -e "${ORANGE}Enter the path to the dnsx wordlist (press enter to use default):${NC}"
