@@ -350,6 +350,28 @@ fi
 
 
 
+# Prompt for custom status codes in httpx
+
+announce_message "Enter the status codes you want to include (comma-separated). Leave blank to use defaults."
+
+echo -e "${ORANGE}Enter the status codes for httpx (comma-separated, or press enter to use defaults):${NC}"
+
+read STATUS_CODES
+
+
+
+# Set default status codes if none provided
+
+if [ -z "$STATUS_CODES" ]; then
+
+    STATUS_CODES="200,201,202,203,204,206,301,302,303,307,308"
+
+    echo -e "${CYAN}Using default httpx status codes: $STATUS_CODES${NC}"
+
+fi
+
+
+
 # Function to announce vulnerability severity
 
 function announce_vulnerability() {
@@ -590,11 +612,33 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
 
 
+    # Prompt to use httpx dashboard upload
+
+    announce_message "Do you want to enable httpx dashboard upload? Enter yes or no."
+
+    echo -e "${ORANGE}Do you want to enable httpx dashboard upload? (y/n)${NC}"
+
+    read USE_HTTPX_DASHBOARD
+
+
+
+    if [ "$USE_HTTPX_DASHBOARD" == "y" ]; then
+
+        HTTPX_DASHBOARD_FLAG="-dashboard"
+
+    else
+
+        HTTPX_DASHBOARD_FLAG=""
+
+    fi
+
+
+
     announce_message "Running httpx on combined subdomains..."
 
     echo -e "${ORANGE}Running httpx on combined subdomains...${NC}"
 
-    httpx_output=$($PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc 200,201,202,203,204,206,301,302,303,307,308 -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" < ${DATA_DIR}/${TARGET}-combined-subs.txt)
+    httpx_output=$($PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc $STATUS_CODES $HTTPX_DASHBOARD_FLAG -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" < ${DATA_DIR}/${TARGET}-combined-subs.txt)
 
 
 
@@ -656,7 +700,7 @@ elif [[ "$SCAN_TYPE" -eq 2 ]]; then
 
     announce_message "Running httpx on target URL..."
 
-    httpx_output=$(echo $URL | $PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc 200,201,202,203,204,206,301,302,303,307,308 $HTTPX_DASHBOARD_FLAG -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+    httpx_output=$(echo $URL | $PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc $STATUS_CODES $HTTPX_DASHBOARD_FLAG -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
 
 
