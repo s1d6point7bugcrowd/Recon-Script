@@ -10,6 +10,7 @@ This script automates the process of running security scans using Nuclei, a powe
 
 ## Features
 
+***Added secure version with forensic time-stamps and encryption (recon-script-secure.sh)***
 ***Added new HTTPX Cloud Feature Option***
 
 - **Voice Notifications**: Get voice alerts for various actions and vulnerability detections.
