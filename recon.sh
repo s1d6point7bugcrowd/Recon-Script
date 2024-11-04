@@ -430,7 +430,7 @@ function run_nuclei() {
 
     local target_file=$1
 
-    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG $CLOUD_UPLOAD_FLAG"
+    local nuclei_cmd="nuclei -rl $RATE_LIMIT -c 10 -bulk-size 10 -ss template-spray -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG $CLOUD_UPLOAD_FLAG"
 
 
 
