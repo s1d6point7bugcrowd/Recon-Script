@@ -166,26 +166,15 @@ if [ -z "$RATE_LIMIT" ]; then
     RATE_LIMIT=5
 fi
 
-# Prompt for dnsx wordlist
-announce_message "Enter the path to the dnsx wordlist (press enter to use default)."
-echo -e "${ORANGE}Enter the path to the dnsx wordlist:${NC}"
-read DNSX_WORDLIST
-
-# Set default wordlist if none provided
-if [ -z "$DNSX_WORDLIST" ]; then
-    DNSX_WORDLIST="/home/kali/SecLists/Discovery/DNS/subdomains-top1million-5000.txt"
-    echo -e "${CYAN}Using default DNSX wordlist: $DNSX_WORDLIST${NC}"
-fi
-
-# Prompt for dnsx resolver list
-announce_message "Enter the path to the dnsx resolver list (press enter to use default)."
-echo -e "${ORANGE}Enter the path to the dnsx resolver list:${NC}"
+# Prompt for resolver list (used by puredns)
+announce_message "Enter the path to the default resolver list (press enter to use default)."
+echo -e "${ORANGE}Enter the path to the default resolver list:${NC}"
 read RESOLVER_LIST
 
 # Set default resolver list if none provided
 if [ -z "$RESOLVER_LIST" ]; then
     RESOLVER_LIST="/home/kali/resolvers/resolvers-trusted.txt"
-    echo -e "${CYAN}Using default DNSX resolver list: $RESOLVER_LIST${NC}"
+    echo -e "${CYAN}Using default resolver list: $RESOLVER_LIST${NC}"
 fi
 
 # Prompt for custom status codes in httpx
@@ -195,7 +184,7 @@ read STATUS_CODES
 
 # Set default status codes if none provided
 if [ -z "$STATUS_CODES" ]; then
-    STATUS_CODES="200,201,202,203,204,206,301,302,303,307,308"
+    STATUS_CODES="200,302"
     echo -e "${CYAN}Using default httpx status codes: $STATUS_CODES${NC}"
 fi
 
@@ -228,7 +217,7 @@ fi
 # Function to run Nuclei
 function run_nuclei() {
     local target_file=$1
-    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -retries 3 -c 2 -timeout 5 -et /home/kali/nuclei-templates/dns/ -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG $CLOUD_UPLOAD_FLAG $DEBUG_FLAG"
+    local nuclei_cmd="nuclei -rl $RATE_LIMIT -ss template-spray -bs 10 -fr -retries 3 -c 2 -timeout 5 -et /home/kali/nuclei-templates/dns/ -H \"$CUSTOM_HEADER\" $SEVERITY_FLAG $CLOUD_UPLOAD_FLAG $DEBUG_FLAG"
 
     if [ ${#TEMPLATE_PATHS_ARRAY[@]} -ne 0 ]; then
         for template_path in "${TEMPLATE_PATHS_ARRAY[@]}"; do
@@ -273,7 +262,7 @@ function filter_oos() {
     done < "$input_file"
 }
 
-# Function to find new subdomains discovered by dnsx
+# Function to find new subdomains discovered by resolution tool (shuffledns or puredns)
 function find_new_subdomains() {
     local original_file=$1
     local new_file=$2
@@ -283,13 +272,13 @@ function find_new_subdomains() {
     comm -13 <(sort "$original_file") <(sort "$new_file") > "$output_file"
 
     if [ -s "$output_file" ]; then
-        echo -e "${ORANGE}New subdomains discovered by dnsx:${NC}"
+        echo -e "${ORANGE}New subdomains discovered by resolution tool:${NC}"
         # Print each new subdomain in purple
         while read -r sub; do
             echo -e "${PURPLE}$sub${NC}"
         done < "$output_file"
     else
-        echo -e "${CYAN}No new subdomains discovered by dnsx.${NC}"
+        echo -e "${CYAN}No new subdomains discovered by resolution tool.${NC}"
     fi
 }
 
@@ -301,29 +290,62 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Running Subfinder..."
     echo -e "${ORANGE}Running Subfinder...${NC}"
-    $PROXYCHAINS_CMD subfinder -d $TARGET -silent -all | anew ${DATA_DIR}/${TARGET}-subs.txt
+    $PROXYCHAINS_CMD subfinder -d "$TARGET" -silent -all | anew "${DATA_DIR}/${TARGET}-subs.txt"
 
     announce_message "Filtering out-of-scope patterns from subfinder results..."
     echo -e "${ORANGE}Subfinder subdomain enumeration completed. Filtering OOS patterns...${NC}"
     filter_oos "${DATA_DIR}/${TARGET}-subs.txt" "${DATA_DIR}/${TARGET}-filtered-subs.txt"
     echo -e "${ORANGE}Filtered subdomains:${NC}"
-    cat ${DATA_DIR}/${TARGET}-filtered-subs.txt
+    cat "${DATA_DIR}/${TARGET}-filtered-subs.txt"
 
-    announce_message "Running dnsx on filtered subdomains with resolver list to expand results..."
-    echo -e "${ORANGE}OOS filtering completed. Running dnsx...${NC}"
-    $PROXYCHAINS_CMD dnsx -rl 5 -resp -silent -r $RESOLVER_LIST -w $DNSX_WORDLIST -d ${DATA_DIR}/${TARGET}-filtered-subs.txt | anew ${DATA_DIR}/${TARGET}-dnsx-results.txt
+    ### START: Option to use shuffledns or puredns for subdomain resolution ###
+    echo -e "${ORANGE}Do you want to use shuffledns for subdomain resolution? (y/n)${NC}"
+    read USE_SHUFFLEDNS
 
-    # Combine results from dnsx with filtered subdomains
-    cat ${DATA_DIR}/${TARGET}-dnsx-results.txt ${DATA_DIR}/${TARGET}-filtered-subs.txt | sort -u > ${DATA_DIR}/${TARGET}-combined-subs.txt
+    if [ "$USE_SHUFFLEDNS" == "y" ]; then
+        announce_message "Running shuffledns on filtered subdomains..."
+        echo -e "${ORANGE}OOS filtering completed. Running shuffledns...${NC}"
+        $PROXYCHAINS_CMD shuffledns -mode bruteforce \
+            -d "$TARGET" \
+            -l "${DATA_DIR}/${TARGET}-filtered-subs.txt" \
+            -w "/home/kali/SecLists/Discovery/DNS/subdomains-top1million-5000.txt" \
+            -r "/home/kali/resolvers/resolvers-community.txt" \
+            -silent \
+            -o "${DATA_DIR}/${TARGET}-shuffledns-results.txt"
 
-    # Find and report new subdomains discovered by dnsx
-    find_new_subdomains "${DATA_DIR}/${TARGET}-filtered-subs.txt" "${DATA_DIR}/${TARGET}-dnsx-results.txt" "${DATA_DIR}/${TARGET}-new-subdomains.txt"
+        if [ ! -f "${DATA_DIR}/${TARGET}-shuffledns-results.txt" ]; then
+            echo -e "${CYAN}shuffledns did not produce any output, creating an empty results file.${NC}"
+            touch "${DATA_DIR}/${TARGET}-shuffledns-results.txt"
+        fi
+
+        RESOLUTION_RESULTS="${DATA_DIR}/${TARGET}-shuffledns-results.txt"
+    else
+        # Prompt for puredns wordlist
+        announce_message "Enter the path to the puredns wordlist (press enter to use default)."
+        echo -e "${ORANGE}Enter the path to the puredns wordlist:${NC}"
+        read PUREDNS_WORDLIST
+        if [ -z "$PUREDNS_WORDLIST" ]; then
+            PUREDNS_WORDLIST="/home/kali/SecLists/Discovery/DNS/subdomains-top1million-5000.txt"
+            echo -e "${CYAN}Using default puredns wordlist: $PUREDNS_WORDLIST${NC}"
+        fi
+
+        announce_message "Running puredns bruteforce on target domain..."
+        echo -e "${ORANGE}OOS filtering completed. Running puredns bruteforce...${NC}"
+        $PROXYCHAINS_CMD puredns bruteforce "$PUREDNS_WORDLIST" "$TARGET" -r "$RESOLVER_LIST" -l 10000  -w "${DATA_DIR}/${TARGET}-puredns-results.txt"
+        RESOLUTION_RESULTS="${DATA_DIR}/${TARGET}-puredns-results.txt"
+    fi
+    ### END: Option to use shuffledns or puredns ###
+
+    # Combine results from resolution tool with filtered subdomains and deduplicate
+    cat "${RESOLUTION_RESULTS}" "${DATA_DIR}/${TARGET}-filtered-subs.txt" | sort -u > "${DATA_DIR}/${TARGET}-combined-subs.txt"
+
+    # Find and report new subdomains discovered by resolution tool
+    find_new_subdomains "${DATA_DIR}/${TARGET}-filtered-subs.txt" "${RESOLUTION_RESULTS}" "${DATA_DIR}/${TARGET}-new-subdomains.txt"
 
     # Highlight newly discovered subdomains in the final combined list
     echo -e "${ORANGE}Full combined subdomain list, highlighting new subdomains in purple:${NC}"
     while read -r domain; do
         if grep -Fxq "$domain" "${DATA_DIR}/${TARGET}-new-subdomains.txt"; then
-            # If it's in the new-subdomains list, print in purple
             echo -e "${PURPLE}$domain${NC}"
         else
             echo "$domain"
@@ -343,18 +365,18 @@ if [[ "$SCAN_TYPE" -eq 1 ]]; then
 
     announce_message "Running httpx on combined subdomains..."
     echo -e "${ORANGE}Running httpx on combined subdomains...${NC}"
-    httpx_output=$($PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc $STATUS_CODES $HTTPX_DASHBOARD_FLAG \
+    httpx_output=$($PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc "$STATUS_CODES" $HTTPX_DASHBOARD_FLAG \
       -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36" \
-      < ${DATA_DIR}/${TARGET}-combined-subs.txt)
+      < "${DATA_DIR}/${TARGET}-combined-subs.txt")
 
     echo -e "${ORANGE}httpx results:${NC}"
-    echo "$httpx_output" | tee ${DATA_DIR}/${TARGET}-httpx-results.txt
+    echo "$httpx_output" | tee "${DATA_DIR}/${TARGET}-httpx-results.txt"
 
     announce_message "Filtering out-of-scope patterns from httpx results..."
     echo -e "${ORANGE}Filtering OOS patterns from httpx results...${NC}"
     echo "$httpx_output" | grep -oP 'http[^\s]+' | filter_oos /dev/stdin "${DATA_DIR}/${TARGET}-final-httpx-urls.txt"
     echo -e "${ORANGE}Filtered URLs:${NC}"
-    cat ${DATA_DIR}/${TARGET}-final-httpx-urls.txt
+    cat "${DATA_DIR}/${TARGET}-final-httpx-urls.txt"
 
     announce_message "Running nuclei on filtered URLs..."
     run_nuclei "${DATA_DIR}/${TARGET}-final-httpx-urls.txt"
@@ -376,9 +398,9 @@ elif [[ "$SCAN_TYPE" -eq 2 ]]; then
     fi
 
     announce_message "Running httpx on target URL..."
-    httpx_output=$(echo $URL | $PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc $STATUS_CODES $HTTPX_DASHBOARD_FLAG \
+    httpx_output=$(echo $URL | $PROXYCHAINS_CMD httpx -silent -title -rl 5 -status-code -td -mc "$STATUS_CODES" $HTTPX_DASHBOARD_FLAG \
       -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-
+    
     echo -e "${ORANGE}$httpx_output${NC}" | tee "${DATA_DIR}/${URL//[:\/]/_}-web-alive.txt"
 
     if [ ${#OOS_PATTERNS[@]} -eq 0 ]; then
